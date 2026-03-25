@@ -1,23 +1,28 @@
 const User = require("../../models/User");
 const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+require("dotenv").config();
 
 const getMe = (req, res, next) => {
-  if (req.session.isLoggedIn && req.session.user) {
+  const token = req.cookies.token;
+
+  if (!token) {
+    return res.status(200).json({ isLoggedIn: false, user: null });
+  }
+
+  try {
+    const decodedUser = jwt.verify(token, process.env.JWT_SECRET_KEY);
+
     return res.status(200).json({
       isLoggedIn: true,
-      user: {
-        _id: req.session.user._id,
-        firstName: req.session.user.firstName,
-        lastName: req.session.user.lastName,
-        userType: req.session.user.userType,
-        email: req.session.user.email,
-      },
+      user: decodedUser,
+    });
+  } catch (err) {
+    return res.status(200).json({
+      isLoggedIn: false,
+      user: null,
     });
   }
-  return res.status(200).json({
-    isLoggedIn: false,
-    user: null,
-  });
 };
 
 const postLogin = async (req, res, next) => {
@@ -41,31 +46,27 @@ const postLogin = async (req, res, next) => {
         redirectTo: `/verify-otp?email=${email}`,
       });
     }
-    
 
     const isMatching = await bcrypt.compare(password, user.password);
 
     if (isMatching) {
-      req.session.isLoggedIn = true;
-      req.session.user = user;
-      
-      req.session.save((err) => {
-        if (err) {
-          return res.status(500).json({
-            message: "Session save error",
-            success: false,
-          });
-        }
-        return res.status(200).json({
-          success: true,
-          user: {
-            _id: req.session.user._id,
-            firstName: req.session.user.firstName,
-            lastName: req.session.user.lastName,
-            userType: req.session.user.userType,
-            email: req.session.user.email,
-          },
-        });
+      const { _id, userType, firstName, lastName, email } = user;
+      const payload = { _id, userType, firstName, lastName, email };
+
+      const token = jwt.sign(payload, process.env.JWT_SECRET_KEY, {
+        expiresIn: "15d",
+      });
+
+      res.cookie("token", token, {
+        path: "/",
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production", // secure true in production
+        maxAge: 60000 * 60 * 24 * 15, // 15 days
+      });
+
+      return res.status(200).json({
+        success: true,
+        user: payload,
       });
     } else {
       return res.status(401).json({
@@ -83,22 +84,16 @@ const postLogin = async (req, res, next) => {
 };
 
 const postLogout = (req, res, next) => {
-  //Don't use async await as it doesn't returns a promise by default..
-  req.session.destroy((err) => {
-    if (err) {
-      console.log("Session Destroy error:", err);
-    }
     // Clear the session cookie from browser
-    res.clearCookie("connect.sid", {
+    res.clearCookie("token", {
       path: "/",
       httpOnly: true,
     });
+
     return res.status(200).json({
       success: true,
       message: "Logged out successfully",
     });
-
-  });
 };
 
 module.exports = {

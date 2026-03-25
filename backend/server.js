@@ -5,12 +5,11 @@ const cors = require("cors");
 const path = require("path");
 const mongoose = require("mongoose");
 const multer = require('multer');
-const session = require("express-session");
+const cookieParser = require('cookie-parser')
 require("dotenv").config();
 
 const { url } = require('./config/db_config')
 const rootDir = require("./utils/path-util");
-const { sessionStore } = require('./config/session_config')
 
 
 //Importing the Routers
@@ -28,21 +27,8 @@ app.use(cors({
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-//Session Middleware
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET_KEY,
-    resave: false,
-    saveUninitialized: false,
-    store: sessionStore,
-    cookie: {
-      path: "/",
-      httpOnly: true,
-      secure: false, // Set to true only in production with HTTPS
-      maxAge: 60000 * 60 * 24 * 15, // 15 days
-    },
-  }),
-);
+//Cookie Parser Middleware
+app.use(cookieParser());
 
 //Static Files Middleware
 app.use(express.static(path.join(rootDir, "public")));

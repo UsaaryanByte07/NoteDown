@@ -1,58 +1,92 @@
+const jwt = require("jsonwebtoken");
+require("dotenv").config();
+
 const requireAdmin = (req, res, next) => {
-    if(!req.session.isLoggedIn || !req.session.user){
-        return res.status(401).json({
-            success: false,
-            message: 'Not Aunthenticated'
-        })
-    }
-    if(req.session.user.userType !== 'admin'){
-        return res.status(401).json({
-            success: false,
-            message: 'Access Denied, Only Admins can Access'
-        })
-    }
-    next()
-}
+  const token = req.cookies.token;
 
-const requireLogin = (req, res, next)=>{
-    if(!req.session.isLoggedIn || !req.session.user){
-        return res.status((401)).json({
-            success: false,
-            message: 'Not Aunthenticated'
-        })
-    }
-    next()
-}
+  if (!token) {
+    return res
+      .status(401)
+      .json({ success: false, message: "Not Authenticated" });
+  }
 
-const requireNotLoggedIn = (req, res, next)=>{
-    if(req.session.isLoggedIn){
-        return res.status(400).json({
-            sucess: false,
-            message: 'Already Logged In'
-        })
-    }       
-    next()
-}
+  try {
+    const decodedUser = jwt.verify(token, process.env.JWT_SECRET_KEY);
 
-const requireUser = (req, res, next)=>{
-    if(!req.session.isLoggedIn || !req.session.user){
-        return res.status(401).json({
-            success: false,
-            message: 'Not Aunthenticated'
-        })
+    if (decodedUser.userType !== "admin") {
+      return res.status(401).json({
+        success: false,
+        message: "Access Denied, Only Admins can Access",
+      });
     }
-    if(req.session.user.userType !== 'user'){
-        return res.status(401).json({
-            success: false,
-            message: 'Access Denied, Only Users can Access'
-        })
+    req.user = decodedUser;
+    next();
+  } catch (err) {
+    return res
+      .status(401)
+      .json({ success: false, message: "Not Authenticated" });
+  }
+};
+
+const requireLogin = (req, res, next) => {
+  const token = req.cookies.token;
+
+  if (!token) {
+    return res
+      .status(401)
+      .json({ success: false, message: "Not Authenticated" });
+  }
+
+  try {
+    const decodedUser = jwt.verify(token, process.env.JWT_SECRET_KEY);
+    req.user = decodedUser;
+    next();
+  } catch (err) {
+    return res
+      .status(401)
+      .json({ success: false, message: "Invalid or Expired Token" });
+  }
+};
+
+const requireNotLoggedIn = (req, res, next) => {
+  const token = req.cookies.token;
+  
+  if (token) {
+    try {
+      // If token is valid, they are logged in
+      jwt.verify(token, process.env.JWT_SECRET);
+      return res.status(400).json({ success: false, message: 'Already Logged In' });
+    } catch (err) {
+      // If token is invalid/expired, they are technically not logged in, so proceed
+      next();
     }
-    next()
-}
+  } else {
+    next();
+  }
+};
+
+const requireUser = (req, res, next) => {
+  const token = req.cookies.token;
+
+  if(!token){
+    return res.status(401).json({ success: false, message: 'Not Authenticated' });
+  }
+
+  try {
+    const decodedUser = jwt.verify(token, process.env.JWT_SECRET);
+    if (decodedUser.userType !== 'user') {
+      return res.status(401).json({ success: false, message: 'Access Denied, Only Users can Access' });
+    }
+    req.user = decodedUser;
+    next();
+  } catch (err) {
+    return res.status(401).json({ success: false, message: 'Not Authenticated' });
+  }
+};
 
 module.exports = {
-    requireAdmin,
-    requireLogin,
-    requireNotLoggedIn,
-    requireUser
-}
+  requireAdmin,
+  requireLogin,
+  requireNotLoggedIn,
+  requireUser,
+};
