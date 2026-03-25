@@ -51,13 +51,6 @@ const confirmPasswordValidator = validator
     return true;
   });
 
-const userTypeValidator = validator
-  .check("userType")
-  .notEmpty()
-  .withMessage("User Type is Required")
-  .isIn(["admin", "user"])
-  .withMessage("User Type must be either Admin or User");
-
 const termsValidator = validator
   .check("terms")
   .notEmpty()
@@ -68,7 +61,6 @@ module.exports = {
     lastNameValidator,
     passwordValidator,
     confirmPasswordValidator,
-    userTypeValidator,
     termsValidator,
     emailValidator
 }

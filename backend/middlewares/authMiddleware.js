@@ -54,7 +54,7 @@ const requireNotLoggedIn = (req, res, next) => {
   if (token) {
     try {
       // If token is valid, they are logged in
-      jwt.verify(token, process.env.JWT_SECRET);
+      jwt.verify(token, process.env.JWT_SECRET_KEY);
       return res.status(400).json({ success: false, message: 'Already Logged In' });
     } catch (err) {
       // If token is invalid/expired, they are technically not logged in, so proceed
@@ -73,7 +73,7 @@ const requireUser = (req, res, next) => {
   }
 
   try {
-    const decodedUser = jwt.verify(token, process.env.JWT_SECRET);
+    const decodedUser = jwt.verify(token, process.env.JWT_SECRET_KEY);
     if (decodedUser.userType !== 'user') {
       return res.status(401).json({ success: false, message: 'Access Denied, Only Users can Access' });
     }

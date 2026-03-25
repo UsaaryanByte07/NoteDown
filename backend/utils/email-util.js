@@ -151,7 +151,7 @@ const sendForgotPasswordEmail = async (to, token) => {
             <div class="content">
                 <h2>Hello! 👋</h2>
                 
-                <p>We received a request to reset the password for your NoteDown account associated with <strong style="color: #6d28d9;">${email}</strong>.</p>
+                <p>We received a request to reset the password for your NoteDown account associated with <strong style="color: #1a73e8;">${to}</strong>.</p>
                 
                 <p>To create a new password, simply click the button below:</p>
                 
@@ -192,7 +192,71 @@ const sendForgotPasswordEmail = async (to, token) => {
   }
 };
 
+const sendWelcomeAdminEmail = async (to, firstName, lastName) => {
+  try {
+    await sendEmail(
+      to,
+      "Welcome to NoteDown Admin Team",
+      `
+            <!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to NoteDown Admin Team</title>
+    <style>
+        body { font-family: 'Arial', sans-serif; line-height: 1.6; color: #0f172a; margin: 0; padding: 40px 20px; background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center;}
+        .wrapper { max-width: 600px; width: 100%; margin: 0 auto; }
+        .container { background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.5); border-radius: 24px; overflow: hidden; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); }
+        .header { background: transparent; color: #0f172a; padding: 40px 30px 20px; text-align: center; }
+        .header h1 { margin: 0; font-size: 28px; font-weight: 800; color: #6d28d9; }
+        .content { padding: 20px 40px 40px; }
+        .content h2 { color: #0f172a; margin-bottom: 20px; font-size: 22px; font-weight: 800;}
+        .content p { margin-bottom: 15px; font-size: 16px; line-height: 1.6; color: #1e293b; font-weight: 500;}
+        .button-container { text-align: center; margin: 35px 0; }
+        .reset-button { display: inline-block; background: #6d28d9; color: white !important; padding: 16px 36px; text-decoration: none; border-radius: 12px; font-weight: 800; font-size: 16px; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(109, 40, 217, 0.3); border: 1px solid rgba(255, 255, 255, 0.2); }
+        .reset-button:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(109, 40, 217, 0.4); }
+        .security-notice { background-color: rgba(255, 255, 255, 0.6); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 12px; padding: 15px; margin: 25px 0; color: #0f172a; font-weight: 600; text-align: center;}
+        .footer { background-color: transparent; padding: 30px; text-align: center; font-size: 14px; color: #475569; border-top: 1px solid rgba(255, 255, 255, 0.4); }
+        .logo { font-size: 32px; font-weight: 900; margin-bottom: 10px; color: #6d28d9; letter-spacing: -1px;}
+        .divider { height: 1px; background: linear-gradient(to right, transparent, rgba(0, 0, 0, 0.1), transparent); margin: 30px 0; }
+        .link-box { word-break: break-all; background-color: rgba(255, 255, 255, 0.5); border: 1px solid rgba(255, 255, 255, 0.3); color: #475569; padding: 12px; border-radius: 10px; font-family: monospace; font-size: 13px; font-weight: 600;}
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <div class="container">
+            <div class="header">
+                <div class="logo">📝 NoteDown</div>
+                <h1>Welcome to NoteDown Admin Team</h1>
+            </div>
+            
+            <div class="content">
+                <h2>Hello ${firstName} ${lastName}! 👋</h2>
+                
+                <p>You have been added as an admin to the NoteDown platform. We're excited to have you on the team!</p>
+                
+                <p>Welcome aboard! If you have any questions or need assistance, feel free to reach out.</p>
+            </div>
+            
+            <div class="footer">
+                <p><strong style="color:#0f172a;">Best regards,</strong><br>
+                <em>The NoteDown Team</em></p>
+                <p style="font-size: 12px; color: #64748b; margin-top: 15px;">This is an automated message. Please do not reply to this email.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+            `,
+    );
+  } catch (err) {
+    console.log(err.message);
+  }
+};
+
 module.exports = {
   sendOtpEmail,
   sendForgotPasswordEmail,
+  sendWelcomeAdminEmail,
 };
