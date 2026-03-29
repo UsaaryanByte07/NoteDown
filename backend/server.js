@@ -15,6 +15,7 @@ const rootDir = require("./utils/path-util");
 //Importing the Routers
 const { authRoutes } = require("./routes/authRoutes");
 const { superuserRoutes } = require("./routes/superuserRoutes");
+const {noteRoutes} = require('./routes/noteRoutes');
 
 const app = express();
 
@@ -38,6 +39,7 @@ app.use(express.static(path.join(rootDir, "public")));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/superuser", superuserRoutes);
+app.use("/api/notes", noteRoutes);
 app.use((req, res, next) => {
   res.status(404).json({ success: false, message: "Route not found" });
 });
