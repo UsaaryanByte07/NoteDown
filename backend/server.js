@@ -1,29 +1,38 @@
-
 const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const path = require("path");
 const mongoose = require("mongoose");
-const multer = require('multer');
-const cookieParser = require('cookie-parser')
+const multer = require("multer");
+const cookieParser = require("cookie-parser");
 require("dotenv").config();
 
-const { url } = require('./config/db_config')
+const { url } = require("./config/db_config");
 const rootDir = require("./utils/path-util");
 
+//Importing the Models
+const SystemStats = require("./models/SystemStats");
+
+//Importing the Middlewares
+const {
+  pageNotFoundHandler,
+  handleMulterError,
+} = require("./middlewares/errorHandlerMiddleware");
 
 //Importing the Routers
 const { authRoutes } = require("./routes/authRoutes");
 const { superuserRoutes } = require("./routes/superuserRoutes");
-const {noteRoutes} = require('./routes/noteRoutes');
+const { noteRoutes } = require("./routes/noteRoutes");
 
 const app = express();
 
 //Cors Middleware
-app.use(cors({
-  origin: "http://localhost:5173",
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  }),
+);
 
 //Body Parser Middleware
 app.use(express.json());
@@ -35,14 +44,11 @@ app.use(cookieParser());
 //Static Files Middleware
 app.use(express.static(path.join(rootDir, "public")));
 
-
-
 app.use("/api/auth", authRoutes);
 app.use("/api/superuser", superuserRoutes);
 app.use("/api/notes", noteRoutes);
-app.use((req, res, next) => {
-  res.status(404).json({ success: false, message: "Route not found" });
-});
+app.use(handleMulterError);
+app.use(pageNotFoundHandler);
 
 const PORT = 3010;
 
@@ -50,6 +56,10 @@ async function startServer() {
   try {
     await mongoose.connect(url);
     console.log("Connected to MongoDB successfully!");
+
+    // Initialize SystemStats if it doesn't exist
+    await SystemStats.getStats();
+    console.log("SystemStats initialized.");
 
     app.listen(PORT, () => {
       console.log(`Server is running on PORT:http://localhost:${PORT}`);

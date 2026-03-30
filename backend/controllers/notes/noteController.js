@@ -371,11 +371,68 @@ const getMyNotes = async (req, res, next) => {
     }
 };
 
+const getSystemStats = async (req, res) => {
+    try {
+        const stats = await SystemStats.getStats();
+        const totalNotes = await Note.countDocuments();
+        const pendingCount = await Note.countDocuments({ status: 'pending' });
+        const approvedCount = await Note.countDocuments({ status: 'approved' });
+        const rejectedCount = await Note.countDocuments({ status: 'rejected' });
+
+        return res.status(200).json({
+            success: true,
+            stats: {
+                globalStorageUsed: stats.globalStorageUsed,
+                globalStorageUsedMB: (stats.globalStorageUsed / (1024 * 1024)).toFixed(2),
+                globalStorageLimitMB: (4 * 1024).toFixed(2), // 4 GB in MB
+                globalStoragePercentage: ((stats.globalStorageUsed / (4 * 1024 * 1024 * 1024)) * 100).toFixed(2),
+                isUploadEnabled: stats.isUploadEnabled,
+                totalNotesUploaded: stats.totalNotesUploaded,
+                totalNotes,
+                pendingCount,
+                approvedCount,
+                rejectedCount,
+            },
+        });
+    } catch (err) {
+        console.error('Error fetching system stats:', err);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to fetch system statistics.',
+        });
+    }
+};
+
+const getMyStorage = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+
+        return res.status(200).json({
+            success: true,
+            storage: {
+                used: user.totalStorageUsed,
+                usedMB: (user.totalStorageUsed / (1024 * 1024)).toFixed(2),
+                limitMB: '100.00',
+                remainingMB: ((MAX_USER_STORAGE - user.totalStorageUsed) / (1024 * 1024)).toFixed(2),
+                percentage: ((user.totalStorageUsed / MAX_USER_STORAGE) * 100).toFixed(2),
+            },
+        });
+    } catch (err) {
+        console.error('Error fetching user storage:', err);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to fetch storage information.',
+        });
+    }
+};
+
 module.exports = {
   postUploadNote,
   getPendingNotes,
   patchApprovedNote,
+  getSystemStats,
   patchRejectedNote,
   getApprovedNotes,
   getMyNotes,
+  getMyStorage,
 };
