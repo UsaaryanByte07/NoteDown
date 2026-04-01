@@ -8,8 +8,8 @@ const useFetch = (url) => {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
+  const fetchData = useCallback(async (showLoading = true) => {
+    if (showLoading) setLoading(true);
     setError(null);
 
     try {
@@ -23,7 +23,7 @@ const useFetch = (url) => {
     } catch (err) {
       setError(err.message);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   }, [url]);
 

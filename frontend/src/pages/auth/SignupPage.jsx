@@ -84,10 +84,10 @@ const SignupPage = () => {
           </label>
 
           {error && (
-            <p className="text-danger bg-red-50 border border-red-200 px-4 py-2 rounded-lg text-sm">{error}</p>
+            <p className="text-danger-text bg-danger-light border border-danger px-4 py-2 rounded-lg text-sm">{error}</p>
           )}
           {errors.map((err, i) => (
-            <p key={i} className="text-danger bg-red-50 border border-red-200 px-4 py-2 rounded-lg text-sm">{err.msg}</p>
+            <p key={i} className="text-danger-text bg-danger-light border border-danger px-4 py-2 rounded-lg text-sm">{err.msg}</p>
           ))}
 
           <button type="submit" disabled={loading}

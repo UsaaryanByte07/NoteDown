@@ -12,6 +12,8 @@ const userSchema = new mongoose.Schema({
   resetToken: {type: String, default: ''},
   resetTokenExpiry: {type: Date, default: Date.now},
   totalStorageUsed: { type: Number, default: 0 }, // in bytes
+}, {
+    timestamps: true, // Adds createdAt and updatedAt automatically
 });
 
 module.exports = mongoose.model("User", userSchema);

@@ -77,7 +77,7 @@ const SuperuserHomePage = () => {
         {fetching ? (
           <Spinner size="md" />
         ) : error ? (
-          <p className="text-danger bg-red-50 border border-red-200 px-4 py-3 rounded-lg text-sm">
+          <p className="text-danger-text bg-danger-light border border-danger px-4 py-3 rounded-lg text-sm">
             {error}
           </p>
         ) : admins.length === 0 ? (

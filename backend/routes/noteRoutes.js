@@ -1,22 +1,25 @@
 const express = require("express");
 const {
+  getMyStorage,
+  getMyNotes,
   postUploadNote,
   getApprovedNotes,
-  getMyNotes,
+  deleteMyNote,
+} = require("../controllers/notes/userNoteController");
+const {
   getPendingNotes,
   patchApprovedNote,
   patchRejectedNote,
-  getMyStorage,
-  getSystemStats,
-} = require("../controllers/notes/noteController");
-const {requireSuperuser} = require('../middlewares/superuserMiddleware');
+} = require("../controllers/notes/adminNoteController");
+const {getSystemStats} = require('../controllers/notes/superuserNoteController')
+const { requireSuperuser } = require("../middlewares/superuserMiddleware");
 const {
   requireUser,
   requireAdmin,
   requireLogin,
 } = require("../middlewares/authMiddleware");
 const { upload } = require("../middlewares/uploadMiddleware");
-const { uploadRateLimiter } = require('../middlewares/rateLimitMiddleware');
+const { uploadRateLimiter } = require("../middlewares/rateLimitMiddleware");
 const noteRoutes = express.Router();
 
 noteRoutes.post(
@@ -27,13 +30,15 @@ noteRoutes.post(
   postUploadNote,
 );
 
-noteRoutes.get('/', requireLogin, getApprovedNotes);
+noteRoutes.get("/", requireLogin, getApprovedNotes);
 
-noteRoutes.get('/my-notes', requireUser, getMyNotes);
+noteRoutes.get("/my-notes", requireUser, getMyNotes);
 
-noteRoutes.get('/system-stats', requireSuperuser, getSystemStats);
-noteRoutes.get('/pending', requireAdmin, getPendingNotes);
-noteRoutes.patch('/:id/approve', requireAdmin, patchApprovedNote);
-noteRoutes.patch('/:id/reject', requireAdmin, patchRejectedNote);
-noteRoutes.get('/my-storage', requireUser, getMyStorage);
+noteRoutes.get("/system-stats", requireSuperuser, getSystemStats);
+noteRoutes.get("/pending", requireAdmin, getPendingNotes);
+noteRoutes.patch("/:id/approve", requireAdmin, patchApprovedNote);
+noteRoutes.patch("/:id/reject", requireAdmin, patchRejectedNote);
+noteRoutes.get("/my-storage", requireUser, getMyStorage);
+noteRoutes.delete("/my-notes/:id", requireUser, deleteMyNote);
+
 module.exports = { noteRoutes };

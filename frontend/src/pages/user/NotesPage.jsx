@@ -13,7 +13,7 @@ const NotesPage = () => {
                 </p>
 
                 {loading && <p className="text-text-secondary">Loading notes...</p>}
-                {error && <p className="text-red-500">{error}</p>}
+                {error && <p className="text-danger">{error}</p>}
 
                 {data?.notes?.length === 0 && (
                     <p className="text-text-secondary">No notes available yet.</p>

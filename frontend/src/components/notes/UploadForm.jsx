@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import useApi from "../../hooks/useApi";
+import Spinner from "../Spinner";
 
 const UploadForm = () => {
   const { error, loading, executeRequest } = useApi();
@@ -95,13 +96,13 @@ const UploadForm = () => {
   const getStatusStyles = () => {
     switch (uploadStatus) {
       case "scanning":
-        return "bg-yellow-50 border-yellow-200 text-yellow-800";
+        return "bg-warning-light border-warning text-warning-text";
       case "uploading":
-        return "bg-blue-50 border-blue-200 text-blue-800";
+        return "bg-info-light border-info text-info-text";
       case "success":
-        return "bg-green-50 border-green-200 text-green-800";
+        return "bg-success-light border-success text-success-text";
       case "error":
-        return "bg-red-50 border-red-200 text-red-800";
+        return "bg-danger-light border-danger text-danger-text";
       default:
         return "";
     }
@@ -192,9 +193,9 @@ const UploadForm = () => {
       <button
         type="submit"
         disabled={loading || !selectedFile || !title.trim()}
-        className="w-full py-3 bg-primary text-white rounded-lg font-semibold hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full py-3 bg-primary text-white rounded-lg font-semibold hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
-        {loading ? "Processing..." : "Upload Notes"}
+        {loading ? <><Spinner size="sm" /> Processing...</> : "Upload Notes"}
       </button>
     </form>
   );

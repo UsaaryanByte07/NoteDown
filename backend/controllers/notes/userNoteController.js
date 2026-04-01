@@ -11,6 +11,47 @@ const fs = require("fs");
 const MAX_USER_STORAGE = 100 * 1024 * 1024; // 100 MB
 const MAX_GLOBAL_STORAGE = 4 * 1024 * 1024 * 1024; // 4 GB
 
+const getMyStorage = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+
+        return res.status(200).json({
+            success: true,
+            storage: {
+                used: user.totalStorageUsed,
+                usedMB: (user.totalStorageUsed / (1024 * 1024)).toFixed(2),
+                limitMB: '100.00',
+                remainingMB: ((MAX_USER_STORAGE - user.totalStorageUsed) / (1024 * 1024)).toFixed(2),
+                percentage: ((user.totalStorageUsed / MAX_USER_STORAGE) * 100).toFixed(2),
+            },
+        });
+    } catch (err) {
+        console.error('Error fetching user storage:', err);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to fetch storage information.',
+        });
+    }
+};
+
+const getMyNotes = async (req, res, next) => {
+    try {
+        const notes = await Note.find({ uploader: req.user._id })
+            .sort({ createdAt: -1 });
+
+        return res.status(200).json({
+            success: true,
+            notes,
+        });
+    } catch (err) {
+        console.error('Error fetching user notes:', err);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to fetch your notes.',
+        });
+    }
+};
+
 const postUploadNote = async (req, res, next) => {
   try {
     if (!req.file) {
@@ -117,6 +158,25 @@ const postUploadNote = async (req, res, next) => {
       errorCode: "INTERNAL_ERROR",
     });
   }
+};
+
+const getApprovedNotes = async (req, res, next) => {
+    try {
+        const notes = await Note.find({ status: 'approved' })
+            .populate('uploader', 'firstName lastName')
+            .sort({ createdAt: -1 });
+
+        return res.status(200).json({
+            success: true,
+            notes,
+        });
+    } catch (err) {
+        console.error('Error fetching approved notes:', err);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to fetch notes.',
+        });
+    }
 };
 
 const startScanPolling = (
@@ -228,211 +288,81 @@ const startScanPolling = (
   );
 };
 
-const getPendingNotes = async (req, res, next) => {
-    try {
-        const pendingNotes = await Note.find({ status: 'pending' })
-            .populate('uploader', 'firstName lastName email')
-            .sort({ createdAt: -1 });  // Newest first
-
-        return res.status(200).json({
-            success: true,
-            notes: pendingNotes,
-        });
-    } catch (err) {
-        console.error('Error fetching pending notes:', err);
-        return res.status(500).json({
-            success: false,
-            message: 'Failed to fetch pending notes.',
-        });
-    }
-};
-
-const patchApprovedNote = async (req, res, next) => {
+const deleteMyNote = async (req, res, next) => {
   try {
-    const note = await Note.findById(req.params.id);
+    noteId = req.params.id;
+    const note = await Note.findById(noteId);
+
     if (!note) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Note not found" });
-    }
-    if (note.status !== "pending") {
-      return res.status(400).json({
+      return res.status(404).json({
         success: false,
-        message: `This note has already been ${note.status}.`,
+        message: "Note not found",
       });
     }
 
-    note.status = "approved";
-    note.reviewedBy = req.user._id;
-    note.reviewedAt = new Date();
-    await note.save();
+    if(note.uploader.toString() !== req.user._id.toString()){
+      return res.status(403).json({
+        success: false,
+        message: "You do not have permission to delete this note",
+      });
+    }
 
-    return res.status(200).json({
-      success: true,
-      message: "Note approved successfully. It is now visible to all users.",
-      note,
-    });
-  } catch (err) {
-    console.error("Error in patchApprovedNote:", err);
+    //Prevent deletion if note is still scanning
+    if(note.status === 'scanning'){
+      return res.status(400).json({
+        success: false,
+        message: "Cannot delete a note that is still being scanned",
+      });
+    }
+
+    if (note.fileUrl && note.fileKey) {
+            try {
+                await deleteS3(note.fileKey);
+            } catch (err) {
+                console.error('Error deleting S3 file:', err);
+                // Continue with deletion even if S3 delete fails
+            }
+
+            // Update storage counters
+            await User.findByIdAndUpdate(note.uploader, {
+                $inc: { totalStorageUsed: -note.fileSize },
+            });
+            await SystemStats.findOneAndUpdate({}, {
+                $inc: { globalStorageUsed: -note.fileSize },
+            });
+
+            // Re-enable uploads if under limit
+            const stats = await SystemStats.getStats();
+            if (!stats.isUploadEnabled && stats.globalStorageUsed < MAX_GLOBAL_STORAGE) {
+                await SystemStats.findOneAndUpdate({}, { isUploadEnabled: true });
+            }
+        }
+
+        // If file is still quarantined locally
+        if (note.quarantinePath) {
+            fs.unlink(note.quarantinePath, () => {});
+        }
+
+        // Delete the note document
+        await Note.findByIdAndDelete(note._id);
+
+        return res.status(200).json({
+            success: true,
+            message: 'Note deleted successfully',
+        });
+  }catch (err){
+    console.error('Error deleting note:', err);
     return res.status(500).json({
       success: false,
-      message: "An error occurred while approving the note. Please try again.",
+      message: 'Failed to delete note',
     });
   }
-};
-
-const patchRejectedNote = async (req, res, next) => {
-    try{
-        const { reason } = req.body;
-        const note = await Note.findById(req.params.id);
-        if(!note){
-            return res.status(404).json({success: false, message: "Note not found"});
-        }
-        if (note.status !== 'pending') {
-            return res.status(400).json({
-                success: false,
-                message: `This note has already been ${note.status}.`,
-            });
-        }
-
-        try{
-            await deleteS3(note.fileKey);
-        } catch (err) {
-            console.error("Error deleting S3 file:", err);
-        }
-
-        await User.findByIdAndUpdate(note.uploader, {
-            $inc: { totalStorageUsed: -note.fileSize },
-        });
-        await SystemStats.findOneAndUpdate({}, {
-            $inc: { globalStorageUsed: -note.fileSize },
-        });
-
-        // Re-enable uploads if they were disabled and we're now under the limit
-        const stats = await SystemStats.getStats();
-        if (!stats.isUploadEnabled && stats.globalStorageUsed < MAX_GLOBAL_STORAGE) {
-            await SystemStats.findOneAndUpdate({}, { isUploadEnabled: true });
-        }
-
-        // Update note status and add rejection reason
-        note.status = 'rejected';
-        note.reviewedBy = req.user._id;
-        note.reviewedAt = new Date();
-        note.rejectionReason = reason || "No reason provided";
-        await note.save();
-
-        return res.status(200).json({
-            success: true,
-            message: 'Note rejected and file deleted.',
-        });
-    }catch(err){
-        console.error("Error in patchRejectedNote:", err);
-        return res.status(500).json({
-          success: false,
-          message: "An error occurred while rejecting the note. Please try again.",
-        });
-    }
-};
-
-const getApprovedNotes = async (req, res, next) => {
-    try {
-        const notes = await Note.find({ status: 'approved' })
-            .populate('uploader', 'firstName lastName')
-            .sort({ createdAt: -1 });
-
-        return res.status(200).json({
-            success: true,
-            notes,
-        });
-    } catch (err) {
-        console.error('Error fetching approved notes:', err);
-        return res.status(500).json({
-            success: false,
-            message: 'Failed to fetch notes.',
-        });
-    }
-};
-
-const getMyNotes = async (req, res, next) => {
-    try {
-        const notes = await Note.find({ uploader: req.user._id })
-            .sort({ createdAt: -1 });
-
-        return res.status(200).json({
-            success: true,
-            notes,
-        });
-    } catch (err) {
-        console.error('Error fetching user notes:', err);
-        return res.status(500).json({
-            success: false,
-            message: 'Failed to fetch your notes.',
-        });
-    }
-};
-
-const getSystemStats = async (req, res) => {
-    try {
-        const stats = await SystemStats.getStats();
-        const totalNotes = await Note.countDocuments();
-        const pendingCount = await Note.countDocuments({ status: 'pending' });
-        const approvedCount = await Note.countDocuments({ status: 'approved' });
-        const rejectedCount = await Note.countDocuments({ status: 'rejected' });
-
-        return res.status(200).json({
-            success: true,
-            stats: {
-                globalStorageUsed: stats.globalStorageUsed,
-                globalStorageUsedMB: (stats.globalStorageUsed / (1024 * 1024)).toFixed(2),
-                globalStorageLimitMB: (4 * 1024).toFixed(2), // 4 GB in MB
-                globalStoragePercentage: ((stats.globalStorageUsed / (4 * 1024 * 1024 * 1024)) * 100).toFixed(2),
-                isUploadEnabled: stats.isUploadEnabled,
-                totalNotesUploaded: stats.totalNotesUploaded,
-                totalNotes,
-                pendingCount,
-                approvedCount,
-                rejectedCount,
-            },
-        });
-    } catch (err) {
-        console.error('Error fetching system stats:', err);
-        return res.status(500).json({
-            success: false,
-            message: 'Failed to fetch system statistics.',
-        });
-    }
-};
-
-const getMyStorage = async (req, res) => {
-    try {
-        const user = await User.findById(req.user._id);
-
-        return res.status(200).json({
-            success: true,
-            storage: {
-                used: user.totalStorageUsed,
-                usedMB: (user.totalStorageUsed / (1024 * 1024)).toFixed(2),
-                limitMB: '100.00',
-                remainingMB: ((MAX_USER_STORAGE - user.totalStorageUsed) / (1024 * 1024)).toFixed(2),
-                percentage: ((user.totalStorageUsed / MAX_USER_STORAGE) * 100).toFixed(2),
-            },
-        });
-    } catch (err) {
-        console.error('Error fetching user storage:', err);
-        return res.status(500).json({
-            success: false,
-            message: 'Failed to fetch storage information.',
-        });
-    }
-};
+}
 
 module.exports = {
-  postUploadNote,
-  getPendingNotes,
-  patchApprovedNote,
-  getSystemStats,
-  patchRejectedNote,
-  getApprovedNotes,
-  getMyNotes,
-  getMyStorage,
+    getMyStorage,
+    getMyNotes,
+    postUploadNote,
+    getApprovedNotes,
+    deleteMyNote,
 };

@@ -1,4 +1,5 @@
 import useSuperuserApi from "../../hooks/useSuperuserApi";
+import Spinner from "../Spinner";
 
 const AdminCard = ({ admin, onDeleted }) => {
   const { executeRequest, loading } = useSuperuserApi();
@@ -43,9 +44,9 @@ const AdminCard = ({ admin, onDeleted }) => {
       <button
         onClick={handleDelete}
         disabled={loading}
-        className="shrink-0 px-3 py-1.5 text-xs font-semibold text-danger border border-red-200 rounded-lg hover:bg-red-50 disabled:opacity-50 transition-colors"
+        className="shrink-0 px-3 py-1.5 text-xs font-semibold text-danger border border-danger rounded-lg hover:bg-danger-light disabled:opacity-50 transition-colors flex items-center gap-1"
       >
-        {loading ? "Deleting…" : "Delete"}
+        {loading ? <><Spinner size="sm" /> Deleting…</> : "Delete"}
       </button>
     </div>
   );

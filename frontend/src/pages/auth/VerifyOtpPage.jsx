@@ -35,7 +35,7 @@ const VerifyOtpPage = () => {
             className="w-full px-4 py-3 text-center tracking-[0.5em] font-bold text-2xl bg-bg border border-border rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all uppercase"
           />
           {error && (
-            <p className="text-danger bg-red-50 border border-red-200 px-4 py-2 rounded-lg text-sm">{error}</p>
+            <p className="text-danger-text bg-danger-light border border-danger px-4 py-2 rounded-lg text-sm">{error}</p>
           )}
           <button type="submit" disabled={loading}
             className="w-full py-2.5 bg-primary text-white rounded-lg hover:bg-primary-hover disabled:opacity-60 transition-all font-semibold text-sm flex items-center justify-center gap-2">

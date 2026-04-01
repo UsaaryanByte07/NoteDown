@@ -107,7 +107,7 @@ const SuperuserAddAdminPage = () => {
                 </div>
 
                 {errors.map((err, i) => (
-                  <p key={i} className="text-danger bg-red-50 border border-red-200 px-4 py-2 rounded-lg text-sm">
+                  <p key={i} className="text-danger-text bg-danger-light border border-danger px-4 py-2 rounded-lg text-sm">
                     {err.msg}
                   </p>
                 ))}

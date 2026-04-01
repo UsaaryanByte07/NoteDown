@@ -66,7 +66,7 @@ const SuperuserLoginPage = () => {
           </div>
 
           {error && (
-            <p className="text-danger bg-red-50 border border-red-200 px-4 py-2 rounded-lg text-sm">
+            <p className="text-danger-text bg-danger-light border border-danger px-4 py-2 rounded-lg text-sm">
               {error}
             </p>
           )}

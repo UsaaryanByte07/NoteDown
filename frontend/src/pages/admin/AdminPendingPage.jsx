@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import useFetch from '../../hooks/useFetch';
 import useApi from '../../hooks/useApi';
+import NoteCard from '../../components/notes/NoteCard';
+import Spinner from '../../components/Spinner';
 
 const AdminPendingPage = () => {
     const { data, loading, error, refetch } = useFetch('/api/notes/pending');
@@ -33,46 +35,25 @@ const AdminPendingPage = () => {
                     Review and approve or reject uploaded notes.
                 </p>
 
-                {loading && <p className="text-text-secondary">Loading pending notes...</p>}
-                {error && <p className="text-red-500">{error}</p>}
+                {loading && <Spinner size="lg" />}
+                {error && <p className="text-danger">{error}</p>}
 
                 {data?.notes?.length === 0 && (
                     <p className="text-text-secondary">No notes pending review. 🎉</p>
                 )}
 
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {data?.notes?.map((note) => (
-                        <div key={note._id} className="bg-bg border border-border rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                            <div>
-                                <h3 className="font-semibold text-text-primary">{note.title}</h3>
-                                <p className="text-text-secondary text-sm">
-                                    {note.fileName} • {(note.fileSize / (1024 * 1024)).toFixed(2)} MB
-                                </p>
-                                <p className="text-text-secondary text-xs">
-                                    By {note.uploader?.firstName} {note.uploader?.lastName} ({note.uploader?.email})
-                                </p>
-                                <a href={note.fileUrl} target="_blank" rel="noopener noreferrer"
-                                    className="text-primary text-sm hover:underline">
-                                    Preview file ↗
-                                </a>
-                            </div>
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={() => handleApprove(note._id)}
-                                    disabled={actionLoading === note._id}
-                                    className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50"
-                                >
-                                    ✅ Approve
-                                </button>
-                                <button
-                                    onClick={() => handleReject(note._id)}
-                                    disabled={actionLoading === note._id}
-                                    className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50"
-                                >
-                                    ❌ Reject
-                                </button>
-                            </div>
-                        </div>
+                        <NoteCard
+                            key={note._id}
+                            note={note}
+                            showStatus={true}
+                            showActions={true}
+                            showUploader={true}
+                            onApprove={handleApprove}
+                            onReject={handleReject}
+                            actionLoading={actionLoading === note._id}
+                        />
                     ))}
                 </div>
             </div>
