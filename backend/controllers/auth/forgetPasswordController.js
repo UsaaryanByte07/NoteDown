@@ -59,6 +59,9 @@ const postResetPassword = [
       const hashedPassword = await bcrypt.hash(password, 12);
       user.password = hashedPassword;
       user.resetToken = "";
+      user.resetTokenExpiry = null;
+      user.failedLoginAttempts = 0; // Clear lockout so the new password works immediately
+      user.lockUntil = null;
       await user.save();
       return res.json({
         success: true,

@@ -44,6 +44,11 @@ app.use(cookieParser());
 //Static Files Middleware
 app.use(express.static(path.join(rootDir, "public")));
 
+//If your app runs behind a reverse proxy (Nginx, Render, Vercel, Cloudflare), express-rate-limit may see the proxy's IP instead of the real client IP. 
+// Set app.set('trust proxy', 1) in server.js to ensure the real IP is used from the X-Forwarded-For header.
+app.set('trust proxy', 1);
+
+//Route Registration
 app.use("/api/auth", authRoutes);
 app.use("/api/superuser", superuserRoutes);
 app.use("/api/notes", noteRoutes);

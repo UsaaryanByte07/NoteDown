@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import useApi from "../../hooks/useApi";
 import useCooldownTimer from "../../hooks/useCooldownTimer";
+import RateLimitBanner from "../../components/auth/RateLimitBanner";
 import Spinner from "../../components/Spinner";
 
 const VerifyOtpPage = () => {
@@ -9,7 +10,9 @@ const VerifyOtpPage = () => {
   const location = useLocation();
   const email = searchParams.get("email");
   const [otp, setOtp] = useState("");
-  const { executeRequest, loading, error } = useApi();
+  const { executeRequest, loading, error, statusCode } = useApi();
+  const [isRateLimited, setIsRateLimited] = useState(false);
+  const [rateLimitMsg, setRateLimitMsg] = useState("");
   const navigate = useNavigate();
 
   // If we arrived from the "Verify existing account" flow on SignupPage,
@@ -33,9 +36,10 @@ const VerifyOtpPage = () => {
   const handleResend = async () => {
     setResendLoading(true);
     setResendMessage("");
+    setIsRateLimited(false);
+
     const result = await executeRequest("/api/auth/resend-otp", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email }),
     });
 
@@ -43,6 +47,12 @@ const VerifyOtpPage = () => {
       // Backend returns cooldownRemaining: 300; start timer from that value
       startCooldown(result.data?.cooldownRemaining || 300);
       setResendMessage("OTP resent! Check your email.");
+    } else if (statusCode === 429) {
+      setIsRateLimited(true);
+      setRateLimitMsg(
+        result.data?.message ||
+          "Too many OTP requests. Please try again later.",
+      );
     } else if (result.data?.cooldownRemaining) {
       // If backend says we're still in cooldown, sync the timer to correct value
       startCooldown(result.data.cooldownRemaining);
@@ -144,6 +154,9 @@ const VerifyOtpPage = () => {
           </button>
         </form>
 
+        {isRateLimited && (
+          <RateLimitBanner message={rateLimitMsg} retryAfter="15 minutes" />
+        )}
         {/* Resend OTP section */}
         <div style={{ marginTop: "1.5rem" }}>
           {checking ? (

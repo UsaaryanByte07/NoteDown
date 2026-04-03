@@ -3,9 +3,12 @@ import { Link } from "react-router-dom";
 import useApi from "../../hooks/useApi";
 import useCooldownTimer from "../../hooks/useCooldownTimer";
 import Spinner from "../../components/Spinner";
+import RateLimitBanner from "../../components/auth/RateLimitBanner";
 
 const ForgotPasswordPage = () => {
-  const { executeRequest, loading, error } = useApi();
+  const { executeRequest, loading, error, statusCode } = useApi();
+  const [isRateLimited, setIsRateLimited] = useState(false);
+  const [rateLimitMsg, setRateLimitMsg] = useState("");
   const [email, setEmail] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const { isCoolingDown, formatTime, startCooldown, checking } =
@@ -13,6 +16,8 @@ const ForgotPasswordPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsRateLimited(false);
+
     setSuccessMessage("");
     const result = await executeRequest("/api/auth/forgot-password", {
       method: "POST",
@@ -24,11 +29,19 @@ const ForgotPasswordPage = () => {
         result.data.message || "Reset link sent! Check your email.",
       );
       startCooldown(result.data.cooldownRemaining || 300);
+    } else if (statusCode === 429) {
+      setIsRateLimited(true);
+      setRateLimitMsg(
+        result.data?.message ||
+          "Too many reset requests. Please try again later.",
+      );
     } else if (result.data?.cooldownRemaining) {
       // 429 — backend says cooldown is still active.
       // Sync the timer and reveal the timer block by setting successMessage.
       startCooldown(result.data.cooldownRemaining);
-      setSuccessMessage("A reset link was already sent. Please check your email.");
+      setSuccessMessage(
+        "A reset link was already sent. Please check your email.",
+      );
     }
   };
 
@@ -45,6 +58,9 @@ const ForgotPasswordPage = () => {
           </p>
         </div>
 
+        {isRateLimited && (
+          <RateLimitBanner message={rateLimitMsg} retryAfter="15 minutes" />
+        )}
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1">
             <label className="text-sm font-medium text-text-secondary">
@@ -75,21 +91,41 @@ const ForgotPasswordPage = () => {
           {/* Timer — decoupled from successMessage so it shows on any active cooldown,
               including the 429 case on a fresh page load with no prior success state. */}
           {checking ? (
-            <div className="flex justify-center"><Spinner size="sm" /></div>
+            <div className="flex justify-center">
+              <Spinner size="sm" />
+            </div>
           ) : isCoolingDown ? (
-            <p className="text-center text-sm" style={{ color: "var(--text-secondary)" }}>
+            <p
+              className="text-center text-sm"
+              style={{ color: "var(--text-secondary)" }}
+            >
               Resend link in{" "}
-              <span style={{ fontFamily: "monospace", fontWeight: 700, color: "var(--primary)" }}>
+              <span
+                style={{
+                  fontFamily: "monospace",
+                  fontWeight: 700,
+                  color: "var(--primary)",
+                }}
+              >
                 {formatTime()}
               </span>
             </p>
           ) : (
             successMessage && (
-              <p className="text-center text-sm" style={{ color: "var(--text-secondary)" }}>
+              <p
+                className="text-center text-sm"
+                style={{ color: "var(--text-secondary)" }}
+              >
                 Didn't receive it?{" "}
                 <button
                   onClick={handleSubmit}
-                  style={{ color: "var(--primary)", border: "none", background: "none", cursor: "pointer", fontWeight: 600 }}
+                  style={{
+                    color: "var(--primary)",
+                    border: "none",
+                    background: "none",
+                    cursor: "pointer",
+                    fontWeight: 600,
+                  }}
                 >
                   Resend
                 </button>
@@ -99,7 +135,7 @@ const ForgotPasswordPage = () => {
 
           <button
             type="submit"
-            disabled={loading || isCoolingDown}
+            disabled={loading || isRateLimited || isCoolingDown}
             className="w-full py-2.5 bg-primary text-white rounded-lg hover:bg-primary-hover disabled:opacity-60 transition-all font-semibold text-sm mt-1 flex items-center justify-center gap-2"
           >
             {loading ? <Spinner size="sm" /> : "Send Reset Link"}

@@ -3,7 +3,10 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
-const getMe = (req, res, next) => {
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOCK_DURATION = 24 * 60 * 60 * 1000; // 24 hours in ms
+
+const getMe = (req, res) => {
   const token = req.cookies.token;
 
   if (!token) {
@@ -12,37 +15,50 @@ const getMe = (req, res, next) => {
 
   try {
     const decodedUser = jwt.verify(token, process.env.JWT_SECRET_KEY);
-
-    return res.status(200).json({
-      isLoggedIn: true,
-      user: decodedUser,
-    });
+    return res.status(200).json({ isLoggedIn: true, user: decodedUser });
   } catch (err) {
-    return res.status(200).json({
-      isLoggedIn: false,
-      user: null,
-    });
+    return res.status(200).json({ isLoggedIn: false, user: null });
   }
 };
 
-const postLogin = async (req, res, next) => {
+const postLogin = async (req, res) => {
   const { email, password } = req.body;
   try {
-    // Find the user by email
     const user = await User.findOne({ email });
 
-    // Check if user exists
+    // Generic error — never reveal whether email exists
     if (!user) {
       return res.status(401).json({
-        message: "Invalid email or password",
         success: false,
+        message: "Invalid email or password",
       });
     }
 
+    // ── LOCK CHECK — before anything else ──────────────────────────────────────
+    // If lockUntil is in the future the account is still locked.
+    if (user.lockUntil && user.lockUntil > Date.now()) {
+      const remainingMs = user.lockUntil - Date.now();
+      const remainingHours = Math.ceil(remainingMs / (60 * 60 * 1000));
+      return res.status(423).json({   // HTTP 423 = Locked
+        success: false,
+        message: `Account locked due to too many failed attempts. Try again in ${remainingHours} hour(s).`,
+        locked: true,
+        lockUntil: user.lockUntil, // Frontend uses this for a countdown display
+      });
+    }
+
+    // ── EXPIRED LOCK — if lockUntil is in the past, clean up and let them try ──
+    if (user.lockUntil && user.lockUntil <= Date.now()) {
+      user.failedLoginAttempts = 0;
+      user.lockUntil = null;
+      await user.save();
+    }
+
+    // ── EMAIL VERIFICATION CHECK ────────────────────────────────────────────────
     if (!user.isVerified) {
       return res.status(401).json({
-        message: "Please verify your email first",
         success: false,
+        message: "Please verify your email first",
         redirectTo: `/verify-otp?email=${email}`,
       });
     }
@@ -50,54 +66,60 @@ const postLogin = async (req, res, next) => {
     const isMatching = await bcrypt.compare(password, user.password);
 
     if (isMatching) {
-      const { _id, userType, firstName, lastName, email } = user;
-      const payload = { _id, userType, firstName, lastName, email };
+      // ── SUCCESS — reset lockout counters ──────────────────────────────────────
+      user.failedLoginAttempts = 0;
+      user.lockUntil = null;
+      await user.save();
 
-      const token = jwt.sign(payload, process.env.JWT_SECRET_KEY, {
-        expiresIn: "15d",
-      });
+      const { _id, userType, firstName, lastName, email: userEmail } = user;
+      const payload = { _id, userType, firstName, lastName, email: userEmail };
+      const token = jwt.sign(payload, process.env.JWT_SECRET_KEY, { expiresIn: "15d" });
 
       res.cookie("token", token, {
         path: "/",
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production", // secure true in production
-        maxAge: 60000 * 60 * 24 * 15, // 15 days
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 60000 * 60 * 24 * 15,
       });
 
-      return res.status(200).json({
-        success: true,
-        user: payload,
-      });
+      return res.status(200).json({ success: true, user: payload });
+
     } else {
+      // ── FAILED ATTEMPT — increment counter ────────────────────────────────────
+      user.failedLoginAttempts += 1;
+      const attemptsRemaining = MAX_LOGIN_ATTEMPTS - user.failedLoginAttempts;
+
+      if (user.failedLoginAttempts >= MAX_LOGIN_ATTEMPTS) {
+        // Lock the account
+        user.lockUntil = new Date(Date.now() + LOCK_DURATION);
+        await user.save();
+
+        return res.status(423).json({
+          success: false,
+          message: "Too many failed attempts. Account locked for 24 hours.",
+          locked: true,
+          lockUntil: user.lockUntil,
+          attemptsRemaining: 0,
+        });
+      }
+
+      await user.save();
+
       return res.status(401).json({
-        message: "Invalid email or password",
         success: false,
+        message: `Invalid email or password. ${attemptsRemaining} attempt(s) remaining before lockout.`,
+        attemptsRemaining,
       });
     }
   } catch (err) {
-    console.log("Login error:", err);
-    return res.status(500).json({
-      message: "Internal server error",
-      success: false,
-    });
+    console.error("Login error:", err);
+    return res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
 
-const postLogout = (req, res, next) => {
-    // Clear the session cookie from browser
-    res.clearCookie("token", {
-      path: "/",
-      httpOnly: true,
-    });
-
-    return res.status(200).json({
-      success: true,
-      message: "Logged out successfully",
-    });
+const postLogout = (req, res) => {
+  res.clearCookie("token", { path: "/", httpOnly: true });
+  return res.status(200).json({ success: true, message: "Logged out successfully" });
 };
 
-module.exports = {
-  getMe,
-  postLogin,
-  postLogout,
-};
+module.exports = { getMe, postLogin, postLogout };

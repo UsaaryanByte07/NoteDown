@@ -12,6 +12,17 @@
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>NoteDown — AI-powered Notes Assistant</title>
+
+    <!-- FOUC Prevention: applies .dark to <html> synchronously before React renders.
+         Must NOT be async or defer — the whole point is to run before painting. -->
+    <script>
+      (function () {
+        var theme = localStorage.getItem('notedown-theme');
+        if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+          document.documentElement.classList.add('dark');
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

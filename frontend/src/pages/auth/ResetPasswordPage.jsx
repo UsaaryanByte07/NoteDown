@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import useApi from '../../hooks/useApi';
 import Spinner from '../../components/Spinner';
+import RateLimitBanner from '../../components/auth/RateLimitBanner';
 
 const ResetPasswordPage = () => {
   const [searchParams] = useSearchParams();
