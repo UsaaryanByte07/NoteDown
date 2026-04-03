@@ -120,9 +120,9 @@ const NoteCard = ({
         </button>
       )}
 
-      {note.status === "rejected" && note.rejectionReason && (
-        <p className="text-danger text-xs mt-2">
-          Reason: {note.rejectionReason}
+      {note.status === "rejected" && (note.rejectionReason || note.scanResult) && (
+        <p className="text-danger text-xs mt-2 font-medium">
+          Reason: {note.rejectionReason || note.scanResult}
         </p>
       )}
 
@@ -148,7 +148,7 @@ const NoteCard = ({
                 gap: "0.25rem",
               }}
             >
-              {actionLoading ? <Spinner size="xs" /> : "✅ Approve"}
+              {actionLoading ? <Spinner size="sm" /> : "✅ Approve"}
             </button>
           )}
           {onReject && (
@@ -171,7 +171,7 @@ const NoteCard = ({
                 gap: "0.25rem",
               }}
             >
-              {actionLoading ? <Spinner size="xs" /> : "❌ Reject"}
+              {actionLoading ? <Spinner size="sm" /> : "❌ Reject"}
             </button>
           )}
         </div>

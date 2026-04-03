@@ -6,6 +6,7 @@ const BASE_URL = import.meta.env.VITE_API_URL || '';
 const authContext = createContext();
 
 const initialState = {
+  isInitializing: true,
   isLoggedIn: false,
   user: null,
 };
@@ -25,6 +26,9 @@ const AuthProvider = ({ children }) => {
       })
       .catch((error) => {
         console.error("Error fetching auth status:", error);
+      })
+      .finally(() => {
+        dispatch({ type: "FINISH_INIT" });
       });
   }, []);
 

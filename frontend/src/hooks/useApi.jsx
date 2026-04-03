@@ -34,10 +34,13 @@ const useApi = () => {
       setStatusCode(res.status);
 
       if (!res.ok) {
-        // For validation errors (data.errors array), expose the summary message
-        const msg = data.message || `Something went wrong (${res.status})`;
+        // For validation errors (data.errors array), expose the specific message instead of just 422
+        let msg = data.message;
+        if (!msg && data.errors && Array.isArray(data.errors) && data.errors.length > 0) {
+            msg = data.errors[0].msg;
+        }
+        msg = msg || `Something went wrong (${res.status})`;
         setError(msg);
-        // Always return data so components can branch on data.locked, data.cooldownRemaining, etc.
         return { success: false, data };
       }
 
