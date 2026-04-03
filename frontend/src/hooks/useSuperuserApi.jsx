@@ -1,4 +1,5 @@
 import { useState } from "react";
+const BASE_URL = import.meta.env.VITE_API_URL || '';
 
 // Like useApi but sends Authorization: Bearer <token> from localStorage
 const useSuperuserApi = () => {
@@ -12,7 +13,7 @@ const useSuperuserApi = () => {
 
     try {
       const isFormData = options.body instanceof FormData;
-      const res = await fetch(url, {
+      const res = await fetch(`${BASE_URL}${url}`, {
         headers: {
           ...(isFormData ? {} : { "Content-Type": "application/json" }),
           ...(token ? { Authorization: `Bearer ${token}` } : {}),

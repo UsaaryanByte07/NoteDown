@@ -1,6 +1,8 @@
 import { createContext, useContext, useReducer, useEffect } from "react";
 import superuserReducer from "./superuserReducer";
 
+const BASE_URL = import.meta.env.VITE_API_URL || '';
+
 const SuperuserContext = createContext();
 
 const initialState = { isLoggedIn: false, superuser: null };
@@ -13,7 +15,7 @@ const SuperuserProvider = ({ children }) => {
     const token = localStorage.getItem("superuserToken");
     if (!token) return;
 
-    fetch("/api/superuser/me", {
+    fetch(`${BASE_URL}/api/superuser/me`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())
