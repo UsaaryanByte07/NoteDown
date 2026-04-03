@@ -32,8 +32,9 @@ const useCooldownTimer = (email, type = 'otp', initialValue = null) => {
                 return;
             }
             try {
+                const BASE_URL = import.meta.env.VITE_API_URL || '';
                 const res = await fetch(
-                    `/api/auth/cooldown-status?email=${encodeURIComponent(email)}&type=${type}`,
+                    `${BASE_URL}/api/auth/cooldown-status?email=${encodeURIComponent(email)}&type=${type}`,
                     { credentials: 'include' }
                 );
                 const data = await res.json();
