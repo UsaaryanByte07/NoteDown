@@ -29,7 +29,7 @@ const app = express();
 //Cors Middleware
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: process.env.FRONTEND_URL || "http://localhost:5173",
     credentials: true,
   }),
 );
@@ -55,7 +55,7 @@ app.use("/api/notes", noteRoutes);
 app.use(handleMulterError);
 app.use(pageNotFoundHandler);
 
-const PORT = 3010;
+const PORT = process.env.PORT || 3010;
 
 async function startServer() {
   try {

@@ -94,6 +94,7 @@ const patchProfile = [
         path: "/",
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
+        sameSite: 'none', 
         maxAge: 60000 * 60 * 24 * 15,
       });
 
