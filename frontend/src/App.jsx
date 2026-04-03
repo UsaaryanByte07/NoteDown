@@ -17,7 +17,7 @@ import NotFoundPage from "./pages/NotFoundPage";
 {
   /* Admin pages */
 }
-import AdminPendingPage from "./pages/admin/AdminPendingPage";
+import AdminNotesPage from "./pages/admin/AdminNotesPage";
 
 {
   /* User pages */
@@ -25,6 +25,7 @@ import AdminPendingPage from "./pages/admin/AdminPendingPage";
 import UploadNotePage from "./pages/user/UploadNotePage";
 import MyNotesPage from "./pages/user/MyNotesPage";
 import NotesPage from "./pages/user/NotesPage";
+import ProfilePage from "./pages/user/ProfilePage";
 
 {
   /* Superuser pages */
@@ -85,11 +86,12 @@ function App() {
             }
           />
 
+          {/* Admin routes */}
           <Route
-            path="/admin/pending"
+            path="/admin/notes"
             element={
-              <ProtectedRoute>
-                <AdminPendingPage />
+              <ProtectedRoute allowedRole="admin">
+                <AdminNotesPage />
               </ProtectedRoute>
             }
           />
@@ -98,7 +100,7 @@ function App() {
           <Route
             path="/upload"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRole="user">
                 <UploadNotePage />
               </ProtectedRoute>
             }
@@ -106,7 +108,7 @@ function App() {
           <Route
             path="/notes"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRole="user">
                 <NotesPage />
               </ProtectedRoute>
             }
@@ -114,8 +116,16 @@ function App() {
           <Route
             path="/my-notes"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRole="user">
                 <MyNotesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
               </ProtectedRoute>
             }
           />

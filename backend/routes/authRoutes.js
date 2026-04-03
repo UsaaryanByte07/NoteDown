@@ -4,6 +4,9 @@ const {
   getResetPassword,
   postForgotPassword,
   postResetPassword,
+  getCooldownStatus,
+  postResendOtp,
+  postCheckAndResendOtp,
 } = require("../controllers/auth/forgetPasswordController");
 const {
   getMe,
@@ -49,6 +52,12 @@ authRoutes.post("/verify-otp", postVerifyOtp);
 authRoutes.get("/reset-password", getResetPassword);
 authRoutes.post("/reset-password", postResetPassword);
 authRoutes.post("/forgot-password", postForgotPassword);
+
+// Route to resend OTP for both signup verification and password reset, with cooldown management
+authRoutes.post('/resend-otp', postResendOtp);
+authRoutes.get('/cooldown-status', getCooldownStatus);
+// Check if email has unverified account and re-send OTP (or return existing cooldown)
+authRoutes.post('/check-and-resend-otp', postCheckAndResendOtp);
 
 // Login and Logout routes
 authRoutes.post("/login", requireNotLoggedIn, postLogin);

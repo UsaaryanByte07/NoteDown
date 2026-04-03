@@ -1,5 +1,5 @@
 const jwt = require("jsonwebtoken");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const User = require("../../models/User");
 const validator = require("express-validator");
 const {
@@ -13,7 +13,7 @@ const { sendOtpEmail } = require("../../utils/email-util");
 const getProfile = async (req, res, next) => {
   try {
     /* The select here is used to exclude sensitive fields from the user document before returning the profile response. */
-    const user = await User.findById(req.user.id).select(
+    const user = await User.findById(req.user._id).select(
       "-password -otp -otpExpiry -resetToken -resetTokenExpiry",
     );
 
@@ -74,7 +74,7 @@ const patchProfile = [
       const user = await User.findByIdAndUpdate(
         req.user._id,
         { firstName, lastName },
-        { new: true, runValidators: true },
+        { returnDocument: 'after', runValidators: true },
       ).select("-password -otp -otpExpiry -resetToken -resetTokenExpiry");
 
       // Build a new JWT payload with the updated name

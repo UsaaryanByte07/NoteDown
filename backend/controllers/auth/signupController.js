@@ -65,6 +65,7 @@ const postSignup = [
         success: true,
         message: "Signup successful. Please verify your email.",
         redirectTo: `/verify-otp?email=${email}`,
+        cooldownRemaining: 300,
       });
     } catch (err) {
       console.error("Critical Signup Error:", err);

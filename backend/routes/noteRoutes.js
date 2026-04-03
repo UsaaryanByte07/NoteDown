@@ -10,6 +10,7 @@ const {
   getPendingNotes,
   patchApprovedNote,
   patchRejectedNote,
+  getAllNotesForAdmin,
 } = require("../controllers/notes/adminNoteController");
 const {getSystemStats} = require('../controllers/notes/superuserNoteController')
 const { requireSuperuser } = require("../middlewares/superuserMiddleware");
@@ -34,6 +35,7 @@ noteRoutes.get("/", requireLogin, getApprovedNotes);
 
 noteRoutes.get("/my-notes", requireUser, getMyNotes);
 
+noteRoutes.get('/admin/all', requireAdmin, getAllNotesForAdmin);
 noteRoutes.get("/system-stats", requireSuperuser, getSystemStats);
 noteRoutes.get("/pending", requireAdmin, getPendingNotes);
 noteRoutes.patch("/:id/approve", requireAdmin, patchApprovedNote);

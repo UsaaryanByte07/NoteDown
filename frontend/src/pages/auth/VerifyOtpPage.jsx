@@ -1,47 +1,205 @@
-import { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import useApi from '../../hooks/useApi';
-import Spinner from '../../components/Spinner';
+import { useState } from "react";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
+import useApi from "../../hooks/useApi";
+import useCooldownTimer from "../../hooks/useCooldownTimer";
+import Spinner from "../../components/Spinner";
 
 const VerifyOtpPage = () => {
   const [searchParams] = useSearchParams();
-  const email = searchParams.get('email');
-  const [otp, setOtp] = useState('');
+  const location = useLocation();
+  const email = searchParams.get("email");
+  const [otp, setOtp] = useState("");
   const { executeRequest, loading, error } = useApi();
   const navigate = useNavigate();
 
+  // If we arrived from the "Verify existing account" flow on SignupPage,
+  // router state contains cooldownRemaining so we don't need a server round-trip.
+  const initialCooldown = location.state?.cooldownRemaining ?? null;
+
+  const { isCoolingDown, formatTime, startCooldown, checking } =
+    useCooldownTimer(email, "otp", initialCooldown);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendMessage, setResendMessage] = useState("");
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const result = await executeRequest('/api/auth/verify-otp', {
-      method: 'POST',
+    const result = await executeRequest("/api/auth/verify-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, otp }),
     });
-    if (result.success) navigate('/login');
+    if (result.success) navigate("/login");
+  };
+
+  const handleResend = async () => {
+    setResendLoading(true);
+    setResendMessage("");
+    const result = await executeRequest("/api/auth/resend-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+
+    if (result.success) {
+      // Backend returns cooldownRemaining: 300; start timer from that value
+      startCooldown(result.data?.cooldownRemaining || 300);
+      setResendMessage("OTP resent! Check your email.");
+    } else if (result.data?.cooldownRemaining) {
+      // If backend says we're still in cooldown, sync the timer to correct value
+      startCooldown(result.data.cooldownRemaining);
+    }
+    setResendLoading(false);
+  };
+
+  const cardStyle = {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: "80vh",
+    padding: "1.5rem",
+    backgroundColor: "var(--bg-subtle)",
+  };
+  const boxStyle = {
+    backgroundColor: "var(--bg)",
+    border: "1px solid var(--border)",
+    borderRadius: "1rem",
+    padding: "2rem",
+    maxWidth: "28rem",
+    width: "100%",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+    textAlign: "center",
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[80vh] px-4 bg-bg-subtle">
-      <div className="bg-bg border border-border shadow-md rounded-2xl p-8 max-w-md w-full text-center">
-        <span className="text-3xl mb-3 block">✉️</span>
-        <h1 className="text-2xl font-bold text-text-primary mb-2">Verify your email</h1>
-        <p className="text-text-secondary text-sm mb-6">
-          Enter the 6-digit OTP sent to <strong className="text-text-primary">{email}</strong>
+    <div style={cardStyle}>
+      <div style={boxStyle}>
+        <h1
+          style={{
+            color: "var(--text-primary)",
+            fontWeight: 700,
+            marginBottom: "0.5rem",
+          }}
+        >
+          Verify Your Email
+        </h1>
+        <p
+          style={{
+            color: "var(--text-secondary)",
+            fontSize: "0.875rem",
+            marginBottom: "1.5rem",
+          }}
+        >
+          Enter the 6-digit code sent to <strong>{email}</strong>
         </p>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4 text-left">
+        <form
+          onSubmit={handleSubmit}
+          style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
+        >
           <input
-            type="text" maxLength={6} value={otp}
-            onChange={e => setOtp(e.target.value)} placeholder="000000" required
-            className="w-full px-4 py-3 text-center tracking-[0.5em] font-bold text-2xl bg-bg border border-border rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all uppercase"
+            type="text"
+            value={otp}
+            onChange={(e) => setOtp(e.target.value)}
+            placeholder="Enter OTP"
+            maxLength={6}
+            required
+            style={{
+              width: "100%",
+              boxSizing: "border-box",
+              padding: "0.75rem",
+              textAlign: "center",
+              backgroundColor: "var(--bg-subtle)",
+              color: "var(--text-primary)",
+              border: "1px solid var(--border)",
+              borderRadius: "0.5rem",
+              fontSize: "1.25rem",
+              fontFamily: "monospace",
+              letterSpacing: "0.3em",
+            }}
           />
           {error && (
-            <p className="text-danger-text bg-danger-light border border-danger px-4 py-2 rounded-lg text-sm">{error}</p>
+            <p style={{ color: "var(--danger)", fontSize: "0.875rem" }}>
+              {error}
+            </p>
           )}
-          <button type="submit" disabled={loading}
-            className="w-full py-2.5 bg-primary text-white rounded-lg hover:bg-primary-hover disabled:opacity-60 transition-all font-semibold text-sm flex items-center justify-center gap-2">
-            {loading ? <Spinner size="sm" /> : 'Verify OTP'}
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              width: "100%",
+              padding: "0.75rem",
+              backgroundColor: "var(--primary)",
+              color: "#fff",
+              border: "none",
+              borderRadius: "0.5rem",
+              fontWeight: 700,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "0.5rem",
+            }}
+          >
+            {loading ? <Spinner size="sm" /> : "Verify OTP"}
           </button>
         </form>
+
+        {/* Resend OTP section */}
+        <div style={{ marginTop: "1.5rem" }}>
+          {checking ? (
+            // Checking server cooldown status on page load
+            <Spinner size="sm" />
+          ) : isCoolingDown ? (
+            <p style={{ color: "var(--text-secondary)", fontSize: "0.875rem" }}>
+              Resend OTP in{" "}
+              <span
+                style={{
+                  fontFamily: "monospace",
+                  fontWeight: 700,
+                  color: "var(--primary)",
+                }}
+              >
+                {formatTime()}
+              </span>
+            </p>
+          ) : (
+            <button
+              onClick={handleResend}
+              disabled={resendLoading}
+              style={{
+                background: "none",
+                border: "none",
+                color: "var(--primary)",
+                fontSize: "0.875rem",
+                fontWeight: 600,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
+                margin: "0 auto",
+              }}
+            >
+              {resendLoading ? (
+                <>
+                  <Spinner size="sm" /> Sending...
+                </>
+              ) : (
+                "Resend OTP"
+              )}
+            </button>
+          )}
+          {resendMessage && (
+            <p
+              style={{
+                color: "var(--success-text)",
+                fontSize: "0.875rem",
+                marginTop: "0.5rem",
+              }}
+            >
+              {resendMessage}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );

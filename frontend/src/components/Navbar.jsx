@@ -144,34 +144,40 @@ const NavLinks = ({ isLoggedIn, user, loading, handleLogout }) => {
         </span>
         {user?.userType === "admin" && (
           <Link
-            to="/admin/pending"
+            to="/admin/notes"
             className="px-4 py-2 text-text-secondary hover:text-text-primary transition-colors font-medium"
           >
-            Pending Notes
+            Notes Management
           </Link>
         )}
         {user?.userType === "user" && (
-          <Link
-            to="/upload"
-            className="px-4 py-2 text-text-secondary hover:text-text-primary transition-colors font-medium"
-          >
-            Upload
-          </Link>
+          <>
+            <Link
+              to="/upload"
+              className="px-4 py-2 text-text-secondary hover:text-text-primary transition-colors font-medium"
+            >
+              Upload
+            </Link>
+            <Link
+              to="/notes"
+              className="px-4 py-2 text-text-secondary hover:text-text-primary transition-colors font-medium"
+            >
+              Notes
+            </Link>
+            <Link
+              to="/my-notes"
+              className="px-4 py-2 text-text-secondary hover:text-text-primary transition-colors font-medium"
+            >
+              My Notes
+            </Link>
+          </>
         )}
         <Link
-          to="/notes"
+          to="/profile"
           className="px-4 py-2 text-text-secondary hover:text-text-primary transition-colors font-medium"
         >
-          Notes
+          Profile
         </Link>
-        {user?.userType === "user" && (
-          <Link
-            to="/my-notes"
-            className="px-4 py-2 text-text-secondary hover:text-text-primary transition-colors font-medium"
-          >
-            My Notes
-          </Link>
-        )}
         <button
           onClick={handleLogout}
           disabled={loading}
@@ -215,34 +221,40 @@ const MobileNavLinks = ({ isLoggedIn, user, loading, handleLogout }) => {
 
         {user?.userType === "admin" && (
           <Link
-            to="/admin/pending"
+            to="/admin/notes"
             className="px-3 py-3 rounded-lg text-text-secondary hover:bg-bg-subtle hover:text-text-primary transition-colors"
           >
-            📋 Pending Notes
+            Notes Management
           </Link>
         )}
         {user?.userType === "user" && (
-          <Link
-            to="/upload"
-            className="px-3 py-3 rounded-lg text-text-secondary hover:bg-bg-subtle hover:text-text-primary transition-colors"
-          >
-            📤 Upload
-          </Link>
+          <>
+            <Link
+              to="/upload"
+              className="px-3 py-3 rounded-lg text-text-secondary hover:bg-bg-subtle hover:text-text-primary transition-colors"
+            >
+              📤 Upload
+            </Link>
+            <Link
+              to="/notes"
+              className="px-3 py-3 rounded-lg text-text-secondary hover:bg-bg-subtle hover:text-text-primary transition-colors"
+            >
+              📝 Notes
+            </Link>
+            <Link
+              to="/my-notes"
+              className="px-3 py-3 rounded-lg text-text-secondary hover:bg-bg-subtle hover:text-text-primary transition-colors"
+            >
+              📁 My Notes
+            </Link>
+          </>
         )}
         <Link
-          to="/notes"
+          to="/profile"
           className="px-3 py-3 rounded-lg text-text-secondary hover:bg-bg-subtle hover:text-text-primary transition-colors"
         >
-          📝 Notes
+          👤 Profile
         </Link>
-        {user?.userType === "user" && (
-          <Link
-            to="/my-notes"
-            className="px-3 py-3 rounded-lg text-text-secondary hover:bg-bg-subtle hover:text-text-primary transition-colors"
-          >
-            📁 My Notes
-          </Link>
-        )}
 
         <div className="border-t border-border my-2" />
 

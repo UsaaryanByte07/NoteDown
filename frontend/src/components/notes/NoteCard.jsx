@@ -126,22 +126,54 @@ const NoteCard = ({
         </p>
       )}
 
-      {showActions && (
-        <div className="flex gap-2 mt-3">
-          <button
-            onClick={() => onApprove?.(note._id)}
-            disabled={actionLoading}
-            className="px-4 py-2 bg-success text-white rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50 transition-all flex items-center gap-2"
-          >
-            {actionLoading ? <Spinner size="sm" /> : "✅ Approve"}
-          </button>
-          <button
-            onClick={() => onReject?.(note._id)}
-            disabled={actionLoading}
-            className="px-4 py-2 bg-danger text-white rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50 transition-all flex items-center gap-2"
-          >
-            {actionLoading ? <Spinner size="sm" /> : "❌ Reject"}
-          </button>
+      {showActions && (onApprove || onReject) && (
+        <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.75rem" }}>
+          {onApprove && (
+            <button
+              onClick={() => onApprove(note._id)}
+              disabled={actionLoading}
+              style={{
+                flex: 1,
+                padding: "0.5rem",
+                backgroundColor: "var(--primary)",
+                color: "#fff",
+                border: "none",
+                borderRadius: "0.5rem",
+                fontSize: "0.75rem",
+                fontWeight: 600,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "0.25rem",
+              }}
+            >
+              {actionLoading ? <Spinner size="xs" /> : "✅ Approve"}
+            </button>
+          )}
+          {onReject && (
+            <button
+              onClick={() => onReject(note._id)}
+              disabled={actionLoading}
+              style={{
+                flex: 1,
+                padding: "0.5rem",
+                backgroundColor: "var(--danger-light)",
+                color: "var(--danger-text)",
+                border: "1px solid var(--danger)",
+                borderRadius: "0.5rem",
+                fontSize: "0.75rem",
+                fontWeight: 600,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "0.25rem",
+              }}
+            >
+              {actionLoading ? <Spinner size="xs" /> : "❌ Reject"}
+            </button>
+          )}
         </div>
       )}
     </div>
