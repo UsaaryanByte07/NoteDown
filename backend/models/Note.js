@@ -4,7 +4,7 @@ const noteSchema = new mongoose.Schema({
   title: { type: String, required: true, trim: true },
   description: { type: String, default: "", trim: true },
   fileUrl: { type: String, default: "" },
-  fileKey: { type: String, required: true },
+  fileKey: { type: String, default: "" },
   fileSize: { type: Number, required: true },
   fileName: { type: String, required: true },
   mimeType: { type: String, required: true },
