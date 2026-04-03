@@ -2,7 +2,7 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 
-const QUARANTINE_DIR = "/temp/quarantine";
+const QUARANTINE_DIR = path.join(__dirname, "../temp/quarantine");
 
 if (!fs.existsSync(QUARANTINE_DIR)) {
   fs.mkdirSync(QUARANTINE_DIR, { recursive: true });
