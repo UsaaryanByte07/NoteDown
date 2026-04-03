@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import authReducer from "./authReducer";
 import { createContext, useReducer, useContext } from "react";
+const BASE_URL = import.meta.env.VITE_API_URL || '';
 
 const authContext = createContext();
 
@@ -13,7 +14,7 @@ const AuthProvider = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
   useEffect(() => {
-    fetch('/api/auth/me', {
+    fetch(`${BASE_URL}/api/auth/me`, {
       credentials: 'include',
         })
       .then((response) => response.json())

@@ -1,4 +1,5 @@
 import { useCallback, useState, useEffect } from "react";
+const BASE_URL = import.meta.env.VITE_API_URL || '';
 
 //useCallback Memoizes fetchData so useEffect doesn't re-run infinitely.
 
@@ -13,7 +14,7 @@ const useFetch = (url) => {
     setError(null);
 
     try {
-      const res = await fetch(url, { credentials: "include"});
+      const res = await fetch(`${BASE_URL}${url}`, { credentials: "include"});
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
         throw new Error(errData.message || `Error: ${res.status}`);

@@ -1,4 +1,5 @@
 import { useState } from "react";
+const BASE_URL = import.meta.env.VITE_API_URL || '';
 
 // WHY no useEffect? Mutations (POST/PUT/DELETE) are triggered by USER ACTIONS,
 // not automatically when the component mounts. So we return an execute() function.
@@ -20,7 +21,7 @@ const useApi = () => {
 
     try {
       const isFormData = options.body instanceof FormData;
-      const res = await fetch(url, {
+      const res = await fetch(`${BASE_URL}${url}`, {
         credentials: "include",
         headers: isFormData ? {} : { "Content-Type": "application/json" },
         ...options,
