@@ -41,6 +41,11 @@ const noteSchema = new mongoose.Schema(
       enum: ["scanning", "pending", "approved", "rejected"],
       default: "scanning",
     },
+    extractedTextDraft: { type: String, default: null },
+    extractedText: { type: String, default: null },
+    ocrRequired: { type: Boolean, default: false },
+    extractionComplete: { type: Boolean, default: false },
+    ocrToken: { type: String, default: null },
   },
   {
     timestamps: true,

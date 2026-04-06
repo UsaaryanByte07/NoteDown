@@ -23,7 +23,6 @@ const storage = multer.diskStorage({
 
 const allowedMimeTypes = [
   "application/pdf", //.pdf
-  "application/msword", // .doc
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // .docx
   "text/plain", // .txt
 ];
@@ -34,7 +33,7 @@ const fileFilter = (req, file, cb) => {
   } else {
     cb(
       new Error(
-        "Unsupported file type. Only PDF, Word, and Text files are allowed.",
+        "Unsupported file type. Only PDF, DOCX, and Text files are allowed.",
       ),
       false,
     );
@@ -43,7 +42,7 @@ const fileFilter = (req, file, cb) => {
 
 const upload = multer({
   storage,
-  limits: { fileSize: 25 * 1024 * 1024, files: 1 }, // 25MB
+  limits: { fileSize: 10 * 1024 * 1024, files: 1 }, // 10MB
   fileFilter,
 });
 
