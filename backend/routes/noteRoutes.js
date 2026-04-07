@@ -13,6 +13,8 @@ const {
   getAllNotesForAdmin,
 } = require("../controllers/notes/adminNoteController");
 const {getSystemStats} = require('../controllers/notes/superuserNoteController')
+const { postOcrCallback } = require("../controllers/notes/ocrCallbackController");
+
 const { requireSuperuser } = require("../middlewares/superuserMiddleware");
 const {
   requireUser,
@@ -42,5 +44,5 @@ noteRoutes.patch("/:id/approve", requireAdmin, patchApprovedNote);
 noteRoutes.patch("/:id/reject", requireAdmin, patchRejectedNote);
 noteRoutes.get("/my-storage", requireUser, getMyStorage);
 noteRoutes.delete("/my-notes/:id", requireUser, deleteMyNote);
-
+noteRoutes.post("/ocr-callback", requireUser, postOcrCallback);  
 module.exports = { noteRoutes };

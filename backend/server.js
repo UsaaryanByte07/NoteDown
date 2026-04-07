@@ -9,6 +9,7 @@ require("dotenv").config();
 
 const { url } = require("./config/db_config");
 const rootDir = require("./utils/path-util");
+const {startOcrCleanupJob} = require('./utils/ocr-cleanup-job');
 
 //Importing the Models
 const SystemStats = require("./models/SystemStats");
@@ -69,6 +70,8 @@ async function startServer() {
     app.listen(PORT, () => {
       console.log(`Server is running on PORT:http://localhost:${PORT}`);
     });
+    
+    startOcrCleanupJob();
   } catch (err) {
     console.log("Unable to connect to Database:", err.message);
     process.exit(1);

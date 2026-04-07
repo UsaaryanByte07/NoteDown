@@ -2,54 +2,70 @@ const Note = require("../../models/Note");
 const User = require("../../models/User");
 const SystemStats = require("../../models/SystemStats");
 const {
+  extractTextFromDocx,
+  analyzeDigitalPdf,
+  extractTextFromTxt,
+} = require("../../utils/text-extraction-util");
+const { getPageCount } = require("../../utils/page-count-util");
+const {
   submitFileForVirusScan,
   getAnalysisResults,
 } = require("../../config/virustotal_config");
 const { uploadS3, deleteS3 } = require("../../utils/s3-util");
 const fs = require("fs");
+const jwt = require("jsonwebtoken");
+require("dotenv").config();
 
 const MAX_USER_STORAGE = 100 * 1024 * 1024; // 100 MB
 const MAX_GLOBAL_STORAGE = 4 * 1024 * 1024 * 1024; // 4 GB
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+const MAX_PAGE_COUNT = 15; // Max 15 pages
 
 const getMyStorage = async (req, res) => {
-    try {
-        const user = await User.findById(req.user._id);
+  try {
+    const user = await User.findById(req.user._id);
 
-        return res.status(200).json({
-            success: true,
-            storage: {
-                used: user.totalStorageUsed,
-                usedMB: (user.totalStorageUsed / (1024 * 1024)).toFixed(2),
-                limitMB: '100.00',
-                remainingMB: ((MAX_USER_STORAGE - user.totalStorageUsed) / (1024 * 1024)).toFixed(2),
-                percentage: ((user.totalStorageUsed / MAX_USER_STORAGE) * 100).toFixed(2),
-            },
-        });
-    } catch (err) {
-        console.error('Error fetching user storage:', err);
-        return res.status(500).json({
-            success: false,
-            message: 'Failed to fetch storage information.',
-        });
-    }
+    return res.status(200).json({
+      success: true,
+      storage: {
+        used: user.totalStorageUsed,
+        usedMB: (user.totalStorageUsed / (1024 * 1024)).toFixed(2),
+        limitMB: "100.00",
+        remainingMB: (
+          (MAX_USER_STORAGE - user.totalStorageUsed) /
+          (1024 * 1024)
+        ).toFixed(2),
+        percentage: ((user.totalStorageUsed / MAX_USER_STORAGE) * 100).toFixed(
+          2,
+        ),
+      },
+    });
+  } catch (err) {
+    console.error("Error fetching user storage:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch storage information.",
+    });
+  }
 };
 
 const getMyNotes = async (req, res, next) => {
-    try {
-        const notes = await Note.find({ uploader: req.user._id })
-            .sort({ createdAt: -1 });
+  try {
+    const notes = await Note.find({ uploader: req.user._id }).sort({
+      createdAt: -1,
+    });
 
-        return res.status(200).json({
-            success: true,
-            notes,
-        });
-    } catch (err) {
-        console.error('Error fetching user notes:', err);
-        return res.status(500).json({
-            success: false,
-            message: 'Failed to fetch your notes.',
-        });
-    }
+    return res.status(200).json({
+      success: true,
+      notes,
+    });
+  } catch (err) {
+    console.error("Error fetching user notes:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch your notes.",
+    });
+  }
 };
 
 const postUploadNote = async (req, res, next) => {
@@ -64,10 +80,37 @@ const postUploadNote = async (req, res, next) => {
 
     const { title, description } = req.body;
     if (!title || title.trim() === "") {
+      fs.unlink(req.file.path, () => {});
       return res.status(400).json({
         success: false,
         message: "Title is required",
         errorCode: "NO_TITLE",
+      });
+    }
+
+    if (req.file.size > MAX_FILE_SIZE) {
+      fs.unlink(req.file.path, () => {});
+      return res.status(400).json({
+        success: false,
+        message: "File size exceeds the maximum allowed size of 10 MB.",
+        errorCode: "FILE_TOO_LARGE",
+      });
+    }
+
+    let pageCount;
+    try {
+      pageCount = await getPageCount(req.file.path, req.file.mimetype);
+    } catch (err) {
+      console.error("Page count check failed:", err);
+      pageCount = 0;
+    }
+
+    if (pageCount > MAX_PAGE_COUNT) {
+      fs.unlink(req.file.path, () => {});
+      return res.status(400).json({
+        success: false,
+        message: `File exceeds the ${MAX_PAGE_COUNT}-page limit. Your file has ${pageCount} pages.`,
+        errorCode: "TOO_MANY_PAGES",
       });
     }
 
@@ -76,6 +119,7 @@ const postUploadNote = async (req, res, next) => {
       !stats.isUploadEnabled ||
       stats.globalStorageUsed >= MAX_GLOBAL_STORAGE
     ) {
+      fs.unlink(req.file.path, () => {});
       return res.status(503).json({
         success: false,
         message:
@@ -86,6 +130,7 @@ const postUploadNote = async (req, res, next) => {
 
     const user = await User.findById(req.user._id);
     if (user.totalStorageUsed + req.file.size >= MAX_USER_STORAGE) {
+      fs.unlink(req.file.path, () => {});
       const remainingMB = (
         (MAX_USER_STORAGE - user.totalStorageUsed) /
         (1024 * 1024)
@@ -111,6 +156,40 @@ const postUploadNote = async (req, res, next) => {
       });
     }
 
+    let extractedTextDraft = null;
+    let ocrRequired = false;
+    let extractionComplete = false;
+    let ocrToken = null;
+
+    try {
+      const mime = req.file.mimetype;
+
+      if (mime === "text/plain") {
+        extractedTextDraft = extractTextFromTxt(req.file.path);
+        extractionComplete = true;
+      } else if (
+        mime ===
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      ) {
+        extractedTextDraft = await extractTextFromDocx(req.file.path);
+        extractionComplete = true;
+      } else if (mime === "application/pdf") {
+        const analysis = await analyzeDigitalPdf(req.file.path);
+
+        if (analysis.isHandwritten) {
+          ocrRequired = true;
+          extractionComplete = false;
+        } else {
+          extractedTextDraft = analysis.text;
+          extractionComplete = true;
+        }
+      }
+    } catch (err) {
+      console.error("Text extraction failed:", err);
+      extractionComplete = true;
+      extractedTextDraft = null;
+    }
+
     const s3Key = `notes/${req.user._id}/${Date.now()}-${req.file.originalname}`;
     const note = new Note({
       title: title.trim(),
@@ -123,20 +202,43 @@ const postUploadNote = async (req, res, next) => {
       status: "scanning",
       mimeType: req.file.mimetype,
       quarantinePath: req.file.path,
+      extractedTextDraft,
+      ocrRequired,
+      extractionComplete,
     });
     await note.save();
 
+    if (ocrRequired) {
+      ocrToken = jwt.sign(
+        {
+          noteId: note._id.toString(),
+          userId: req.user._id.toString(),
+          type: "ocr_callback",
+        },
+        process.env.JWT_SECRET_KEY,
+        { expiresIn: "15m" },
+      );
+
+      await Note.findByIdAndUpdate(note._id, { ocrToken });
+    }
+
     res.status(202).json({
       success: true,
-      message:
-        "File received and is being scanned with 70+ antivirus engines. You will be notified when complete.",
+      message: ocrRequired
+        ? "File received. This appears to be a scanned/handwritten PDF. Please wait while we process it..."
+        : "File received and is being scanned with 70+ antivirus engines. You will be notified when complete.",
       note: {
         id: note._id,
         title: note.title,
         fileName: note.fileName,
         status: "scanning",
       },
+      ...(ocrRequired && {
+        ocrRequired: true,
+        ocrToken,
+      }),
     });
+
     startScanPolling(
       note._id,
       analysisId,
@@ -161,22 +263,22 @@ const postUploadNote = async (req, res, next) => {
 };
 
 const getApprovedNotes = async (req, res, next) => {
-    try {
-        const notes = await Note.find({ status: 'approved' })
-            .populate('uploader', 'firstName lastName')
-            .sort({ createdAt: -1 });
+  try {
+    const notes = await Note.find({ status: "approved" })
+      .populate("uploader", "firstName lastName")
+      .sort({ createdAt: -1 });
 
-        return res.status(200).json({
-            success: true,
-            notes,
-        });
-    } catch (err) {
-        console.error('Error fetching approved notes:', err);
-        return res.status(500).json({
-            success: false,
-            message: 'Failed to fetch notes.',
-        });
-    }
+    return res.status(200).json({
+      success: true,
+      notes,
+    });
+  } catch (err) {
+    console.error("Error fetching approved notes:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch notes.",
+    });
+  }
 };
 
 const startScanPolling = (
@@ -206,6 +308,10 @@ const startScanPolling = (
             await Note.findByIdAndUpdate(noteId, {
               status: "rejected",
               scanResult: `Malicious: ${malicious}, Suspicious: ${suspicious}`,
+              rejectionReason:
+                "File flagged as potentially malicious by virus scan.",
+              extractedTextDraft: null,
+              extractionComplete: true,
             });
             fs.unlink(quarantinePath, () => {});
             console.log(
@@ -219,11 +325,21 @@ const startScanPolling = (
                 mimeType,
               );
 
-              await Note.findByIdAndUpdate(noteId, {
-                status: "pending",
+              const currentNote = await Note.findById(noteId);
+              const bothComplete = currentNote.extractionComplete && true;
+
+              const updateData = {
                 fileUrl: uploadResult.url,
                 scanResult: "Clean",
-              });
+              };
+
+              if (bothComplete) {
+                updateData.status = "pending";
+                updateData.extractedText = currentNote.extractedTextDraft;
+                updateData.extractedTextDraft = null;
+              }
+
+              await Note.findByIdAndUpdate(noteId, updateData);
 
               await User.findByIdAndUpdate(userId, {
                 $inc: { totalStorageUsed: fileSize },
@@ -244,7 +360,9 @@ const startScanPolling = (
                 );
               }
 
-              console.log(`Note ${noteId}: CLEAN — uploaded to S3`);
+              console.log(
+                `Note ${noteId}: CLEAN — uploaded to S3${bothComplete ? " — status: pending" : " — awaiting OCR"}`,
+              );
             } catch (err) {
               console.error(`Note ${noteId}: S3 upload failed:`, err);
               await Note.findByIdAndUpdate(noteId, {
@@ -262,6 +380,7 @@ const startScanPolling = (
           await Note.findByIdAndUpdate(noteId, {
             status: "rejected",
             scanResult: "Unable to process the file",
+            rejectionReason: "Unable to process the file",
           });
           fs.unlink(quarantinePath, () => {});
           console.log(
@@ -276,6 +395,7 @@ const startScanPolling = (
           await Note.findByIdAndUpdate(noteId, {
             status: "rejected",
             scanResult: "Unable to process the file",
+            rejectionReason: "Unable to process the file",
           });
           fs.unlink(quarantinePath, () => {});
           console.log(
@@ -300,7 +420,7 @@ const deleteMyNote = async (req, res, next) => {
       });
     }
 
-    if(note.uploader.toString() !== req.user._id.toString()){
+    if (note.uploader.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
         message: "You do not have permission to delete this note",
@@ -308,7 +428,7 @@ const deleteMyNote = async (req, res, next) => {
     }
 
     //Prevent deletion if note is still scanning
-    if(note.status === 'scanning'){
+    if (note.status === "scanning") {
       return res.status(400).json({
         success: false,
         message: "Cannot delete a note that is still being scanned",
@@ -316,53 +436,59 @@ const deleteMyNote = async (req, res, next) => {
     }
 
     if (note.fileUrl && note.fileKey) {
-            try {
-                await deleteS3(note.fileKey);
-            } catch (err) {
-                console.error('Error deleting S3 file:', err);
-                // Continue with deletion even if S3 delete fails
-            }
+      try {
+        await deleteS3(note.fileKey);
+      } catch (err) {
+        console.error("Error deleting S3 file:", err);
+        // Continue with deletion even if S3 delete fails
+      }
 
-            // Update storage counters
-            await User.findByIdAndUpdate(note.uploader, {
-                $inc: { totalStorageUsed: -note.fileSize },
-            });
-            await SystemStats.findOneAndUpdate({}, {
-                $inc: { globalStorageUsed: -note.fileSize },
-            });
+      // Update storage counters
+      await User.findByIdAndUpdate(note.uploader, {
+        $inc: { totalStorageUsed: -note.fileSize },
+      });
+      await SystemStats.findOneAndUpdate(
+        {},
+        {
+          $inc: { globalStorageUsed: -note.fileSize },
+        },
+      );
 
-            // Re-enable uploads if under limit
-            const stats = await SystemStats.getStats();
-            if (!stats.isUploadEnabled && stats.globalStorageUsed < MAX_GLOBAL_STORAGE) {
-                await SystemStats.findOneAndUpdate({}, { isUploadEnabled: true });
-            }
-        }
+      // Re-enable uploads if under limit
+      const stats = await SystemStats.getStats();
+      if (
+        !stats.isUploadEnabled &&
+        stats.globalStorageUsed < MAX_GLOBAL_STORAGE
+      ) {
+        await SystemStats.findOneAndUpdate({}, { isUploadEnabled: true });
+      }
+    }
 
-        // If file is still quarantined locally
-        if (note.quarantinePath) {
-            fs.unlink(note.quarantinePath, () => {});
-        }
+    // If file is still quarantined locally
+    if (note.quarantinePath) {
+      fs.unlink(note.quarantinePath, () => {});
+    }
 
-        // Delete the note document
-        await Note.findByIdAndDelete(note._id);
+    // Delete the note document
+    await Note.findByIdAndDelete(note._id);
 
-        return res.status(200).json({
-            success: true,
-            message: 'Note deleted successfully',
-        });
-  }catch (err){
-    console.error('Error deleting note:', err);
+    return res.status(200).json({
+      success: true,
+      message: "Note deleted successfully",
+    });
+  } catch (err) {
+    console.error("Error deleting note:", err);
     return res.status(500).json({
       success: false,
-      message: 'Failed to delete note',
+      message: "Failed to delete note",
     });
   }
-}
+};
 
 module.exports = {
-    getMyStorage,
-    getMyNotes,
-    postUploadNote,
-    getApprovedNotes,
-    deleteMyNote,
+  getMyStorage,
+  getMyNotes,
+  postUploadNote,
+  getApprovedNotes,
+  deleteMyNote,
 };
