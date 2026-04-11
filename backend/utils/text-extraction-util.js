@@ -1,6 +1,6 @@
 const fs = require("fs");
 const mammoth = require("mammoth");
-const pdfParse = require("pdf-parse");
+const { PDFParse } = require("pdf-parse");
 
 const extractTextFromTxt = (filePath) => {
   return fs.readFileSync(filePath, "utf-8");
@@ -15,9 +15,28 @@ const extractTextFromDocx = async (filePath) => {
 const analyzeDigitalPdf = async (filePath) => {
   const pdfBuffer = fs.readFileSync(filePath);
 
-  let data;
+  let parser;
   try {
-    data = await pdfParse(pdfBuffer);
+    parser = new PDFParse({ data: new Uint8Array(pdfBuffer) });
+    const textResult = await parser.getText();
+    const doc = await parser.load();
+    const pageCount = doc.numPages;
+    const extractedText = textResult.text;
+    const avgCharsPerPage = extractedText.length / pageCount;
+
+    if (avgCharsPerPage < 50) {
+      return {
+        text: null,
+        pageCount: pageCount,
+        isHandwritten: true,
+      };
+    }
+
+    return {
+      text: extractedText,
+      pageCount: pageCount,
+      isHandwritten: false,
+    };
   } catch (err) {
     console.error("pdf-parse failed (treating as handwritten):", err.message);
     return {
@@ -25,24 +44,10 @@ const analyzeDigitalPdf = async (filePath) => {
       pageCount: 0,
       isHandwritten: true,
     };
-  }
-
-  const pageCount = data.numpages;
-  const extractedText = data.text;
-  const avgCharsPerPage = extractedText.length / pageCount;
-
-  if (avgCharsPerPage < 50) {
-    return {
-      text: extractedText,
-      pageCount: pageCount,
-      isHandwritten: true,
-    };
-  }
-
-  return {
-    text: extractedText,
-    pageCount: pageCount,
-    isHandwritten: false,
+  } finally {
+    if (parser) {
+      try { await parser.destroy(); } catch (_) {}
+    }
   }
 };
 

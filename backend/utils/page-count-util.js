@@ -1,19 +1,25 @@
 const fs = require("fs");
-const pdfParse = require("pdf-parse");
+const { PDFParse } = require("pdf-parse");
 const mammoth = require("mammoth");
 
 const ESTIMATED_CHARS_PER_PAGE = 3000; 
 
 const getPageCount = async (filePath, mimeType) => {
-     if (mimeType === "application/pdf") {
+  if (mimeType === "application/pdf") {
     const pdfBuffer = fs.readFileSync(filePath);
+    let parser;
     try {
-      const data = await pdfParse(pdfBuffer);
-      return data.numpages;
+      parser = new PDFParse({ data: new Uint8Array(pdfBuffer) });
+      const doc = await parser.load();
+      return doc.numPages;
     } catch (err) {
       console.error("pdf-parse page count failed:", err.message);
       // If can't count pages, return 0 and let the extraction step handle it
       return 0;
+    } finally {
+      if (parser) {
+        try { await parser.destroy(); } catch (_) {}
+      }
     }
   }
 

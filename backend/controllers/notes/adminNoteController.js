@@ -8,6 +8,7 @@ const MAX_GLOBAL_STORAGE = 4 * 1024 * 1024 * 1024; // 4 GB
 const getPendingNotes = async (req, res, next) => {
     try {
         const pendingNotes = await Note.find({ status: 'pending' })
+            .select('-extractedText -extractedTextDraft -ocrToken')
             .populate('uploader', 'firstName lastName email')
             .sort({ createdAt: -1 });  // Newest first
 
@@ -121,12 +122,15 @@ const getAllNotesForAdmin = async (req, res, next) => {
         // Run all three queries in parallel with Promise.all — faster than sequential await
         const [pending, approved, rejected] = await Promise.all([
             Note.find({ status: 'pending' })
+                .select('-extractedText -extractedTextDraft -ocrToken')
                 .populate('uploader', 'firstName lastName email')
                 .sort({ createdAt: -1 }),
             Note.find({ status: 'approved' })
+                .select('-extractedText -extractedTextDraft -ocrToken')
                 .populate('uploader', 'firstName lastName email')
                 .sort({ createdAt: -1 }),
             Note.find({ status: 'rejected' })
+                .select('-extractedText -extractedTextDraft -ocrToken')
                 .populate('uploader', 'firstName lastName email')
                 .sort({ createdAt: -1 }),
         ]);

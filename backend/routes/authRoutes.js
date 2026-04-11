@@ -52,8 +52,9 @@ authRoutes.post(
     postProfileResetPassword,
 );
 
-// This route is used by the frontend to get the current user's profile information (like name and email) to display in the UI, such as in a navbar or profile page. It ensures that the user is authenticated before allowing access to their profile data.
-authRoutes.get("/me", requireLogin, getMe);
+// This route is used by the frontend to get the current user's profile information to display in the UI.
+// It does not use requireLogin so it can gracefully return isLoggedIn: false if the user is not authenticated.
+authRoutes.get("/me", getMe);
 
 // Signup and OTP verification routes
 authRoutes.post("/signup", requireNotLoggedIn,  signupRateLimiter, postSignup);

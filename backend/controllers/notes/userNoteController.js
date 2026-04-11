@@ -51,7 +51,9 @@ const getMyStorage = async (req, res) => {
 
 const getMyNotes = async (req, res, next) => {
   try {
-    const notes = await Note.find({ uploader: req.user._id }).sort({
+    const notes = await Note.find({ uploader: req.user._id })
+      .select('-extractedText -extractedTextDraft -ocrToken')
+      .sort({
       createdAt: -1,
     });
 
@@ -265,6 +267,7 @@ const postUploadNote = async (req, res, next) => {
 const getApprovedNotes = async (req, res, next) => {
   try {
     const notes = await Note.find({ status: "approved" })
+      .select('-extractedText -extractedTextDraft -ocrToken')
       .populate("uploader", "firstName lastName")
       .sort({ createdAt: -1 });
 
