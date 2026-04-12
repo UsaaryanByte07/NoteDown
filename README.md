@@ -30,7 +30,7 @@
 
 <br/><br/>
 
-<img src="docs/images/homepage-preview.png" alt="NoteDown Homepage Preview" width="85%" style="border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.15);" />
+<img src="assets/homepage-preview.png" alt="NoteDown Homepage Preview" width="85%" style="border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.15);" />
 
 </div>
 
@@ -182,33 +182,50 @@ The long-term goal is a full AI-powered conversational experience using **LangCh
 ## 🛠️ Tech Stack Deep Dive
 
 ```mermaid
-mindmap
-  root((NoteDown))
-    Frontend
-      React 19
-      Vite 8
-      Tailwind CSS 4
-      React Router DOM 7
-      Tesseract.js 7
-      pdfjs-dist 5
-    Backend
-      Node.js
-      Express 5
-      Mongoose 9
-      bcryptjs
-      jsonwebtoken
-      express-rate-limit
-      multer
-      mammoth
-      pdf-parse
-    Cloud Services
-      AWS S3
-      VirusTotal API
-      Resend Email API
-      Vercel (Frontend)
-    Database
-      MongoDB
-      MongoDB Atlas
+flowchart LR
+    ND(("📝<br/>NoteDown"))
+
+    subgraph FE["🖥️ Frontend"]
+        direction TB
+        F1["React 19"]
+        F2["Vite 8"]
+        F3["Tailwind CSS 4"]
+        F4["React Router DOM 7"]
+        F5["Tesseract.js 7"]
+        F6["pdfjs-dist 5"]
+    end
+
+    subgraph BE["⚙️ Backend"]
+        direction TB
+        B1["Node.js"]
+        B2["Express 5"]
+        B3["Mongoose 9"]
+        B4["bcryptjs"]
+        B5["jsonwebtoken"]
+        B6["express-rate-limit"]
+        B7["multer"]
+        B8["mammoth"]
+        B9["pdf-parse"]
+    end
+
+    subgraph CS["☁️ Cloud Services"]
+        direction TB
+        C1["AWS S3"]
+        C2["VirusTotal API"]
+        C3["Resend Email API"]
+        C4["Vercel"]
+    end
+
+    subgraph DB["💾 Database"]
+        direction TB
+        D1["MongoDB"]
+        D2["MongoDB Atlas"]
+    end
+
+    ND --> FE
+    ND --> BE
+    ND --> CS
+    ND --> DB
 ```
 
 <details>
@@ -807,41 +824,43 @@ The frontend is deployed on **Vercel** with SPA rewrites configured in `vercel.j
 ## 🗺 Roadmap
 
 ```mermaid
-timeline
+gantt
     title NoteDown Development Roadmap
-    
-    section ✅ Phase 1 : Foundation
-        Core Auth (JWT, Signup, Login) : Completed
-        Email OTP Verification : Completed
-        AWS S3 File Storage : Completed
-        
-    section ✅ Phase 2 : Security
-        VirusTotal Integration : Completed
-        Rate Limiting (9 limiters) : Completed
-        Login Lockout : Completed
-        Admin Approval Flow : Completed
-        
-    section ✅ Phase 3 : Extraction
-        TXT/DOCX/PDF Parsing : Completed
-        Client-Side OCR Pipeline : Completed
-        OCR Cleanup Cron Job : Completed
+    dateFormat YYYY-MM-DD
+    axisFormat %b %Y
 
-    section ✅ Phase 4 : Polish
-        Dark Mode : Completed
-        Responsive Navigation : Completed
-        Profile Management : Completed
-        Superuser Dashboard : Completed
-        
-    section 🚧 Phase 5 : AI
-        MongoDB Vector Embeddings : In Progress
-        LangChain Integration : Planned
-        Gemini API Chat : Planned
-        Document Summarization : Planned
-        
-    section 📋 Phase 6 : Social
-        Note Folders & Tags : Planned
-        Collaborative Study Rooms : Planned
-        Note Sharing & Permissions : Planned
+    section Phase 1 - Foundation
+        Core Auth - JWT Signup Login      :done, p1a, 2025-01-01, 30d
+        Email OTP Verification            :done, p1b, after p1a, 15d
+        AWS S3 File Storage               :done, p1c, after p1b, 20d
+
+    section Phase 2 - Security
+        VirusTotal Integration            :done, p2a, after p1c, 15d
+        Rate Limiting - 9 limiters        :done, p2b, after p2a, 10d
+        Login Lockout                     :done, p2c, after p2b, 10d
+        Admin Approval Flow               :done, p2d, after p2c, 15d
+
+    section Phase 3 - Extraction
+        TXT DOCX PDF Parsing              :done, p3a, after p2d, 15d
+        Client-Side OCR Pipeline          :done, p3b, after p3a, 20d
+        OCR Cleanup Cron Job              :done, p3c, after p3b, 10d
+
+    section Phase 4 - Polish
+        Dark Mode                         :done, p4a, after p3c, 10d
+        Responsive Navigation             :done, p4b, after p4a, 10d
+        Profile Management                :done, p4c, after p4b, 10d
+        Superuser Dashboard               :done, p4d, after p4c, 10d
+
+    section Phase 5 - AI
+        MongoDB Vector Embeddings         :active, p5a, after p4d, 25d
+        LangChain Integration             :p5b, after p5a, 20d
+        Gemini API Chat                   :p5c, after p5b, 25d
+        Document Summarization            :p5d, after p5c, 15d
+
+    section Phase 6 - Social
+        Note Folders and Tags             :p6a, after p5d, 20d
+        Collaborative Study Rooms         :p6b, after p6a, 25d
+        Note Sharing and Permissions      :p6c, after p6b, 20d
 ```
 
 ---
