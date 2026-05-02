@@ -41,30 +41,31 @@ const getChatModel = async () => {
 
 //Embedding Model
 const getEmbeddingModel = async () => {
-    if (_embeddingModel) return _embeddingModel;
+  if (_embeddingModel) return _embeddingModel;
 
-    const { GoogleGenerativeAIEmbeddings } = await import("@langchain/google-genai");
+  const { GoogleGenerativeAIEmbeddings } =
+    await import("@langchain/google-genai");
 
-    _embeddingModel = new GoogleGenerativeAIEmbeddings({
-        model: "gemini-embedding-001",
-        apiKey: process.env.GOOGLE_API_KEY,
-        // Reduces Atlas storage costs while retaining strong retrieval quality.
-        dimensions: 768,
-    });
-    return _embeddingModel;
-}
-
+  _embeddingModel = new GoogleGenerativeAIEmbeddings({
+    model: "gemini-embedding-001",
+    apiKey: process.env.GOOGLE_API_KEY,
+    // Reduces Atlas storage costs while retaining strong retrieval quality.
+    dimensions: 768,
+  });
+  return _embeddingModel;
+};
 
 //Langchain Utility Loaders
 
-const getTextSplitter = async () => {
-    const { RecursiveCharacterTextSplitter } = await import("@langchain/textsplitters");
+const getTextSplitter = async (chunkSize = 500, chunkOverlap = 50) => {
+  const { RecursiveCharacterTextSplitter } =
+    await import("@langchain/textsplitters");
 
-    return new RecursiveCharacterTextSplitter({
+  return new RecursiveCharacterTextSplitter({
     chunkSize,
     chunkOverlap,
   });
-}
+};
 
 const getPromptTemplate = async () => {
   const { ChatPromptTemplate } = await import("@langchain/core/prompts");
@@ -77,9 +78,9 @@ const getDocument = async () => {
 };
 
 module.exports = {
-    getChatModel,
-    getEmbeddingModel,
-    getTextSplitter,
-    getPromptTemplate,
-    getDocument
-}
+  getChatModel,
+  getEmbeddingModel,
+  getTextSplitter,
+  getPromptTemplate,
+  getDocument,
+};
