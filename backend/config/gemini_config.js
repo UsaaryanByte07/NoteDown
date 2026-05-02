@@ -1,4 +1,4 @@
-request("dotenv").config();
+require("dotenv").config();
 
 let _chatModel = null;
 let _embeddingModel = null;
