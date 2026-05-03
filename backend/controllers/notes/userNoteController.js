@@ -1,6 +1,8 @@
 const Note = require("../../models/Note");
 const User = require("../../models/User");
 const SystemStats = require("../../models/SystemStats");
+const { deleteNoteEmbeddings } = require("../../utils/embedding-util");
+const { terminateSessionsByNoteId } = require("../../utils/chat-termination-util");
 const {
   extractTextFromDocx,
   analyzeDigitalPdf,
@@ -413,7 +415,7 @@ const startScanPolling = (
 
 const deleteMyNote = async (req, res, next) => {
   try {
-    noteId = req.params.id;
+    const noteId = req.params.id;
     const note = await Note.findById(noteId);
 
     if (!note) {
@@ -436,6 +438,15 @@ const deleteMyNote = async (req, res, next) => {
         success: false,
         message: "Cannot delete a note that is still being scanned",
       });
+    }
+
+    //Cascade cleanup for RAG (only if note was approved)
+    if (note.status === "approved") {
+      // Delete all vector embeddings for this note
+      await deleteNoteEmbeddings(noteId);
+
+      // Terminate all chat sessions that used this note
+      await terminateSessionsByNoteId(noteId, note.title);
     }
 
     if (note.fileUrl && note.fileKey) {

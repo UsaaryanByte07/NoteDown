@@ -2,8 +2,9 @@ const Note = require("../../models/Note");
 const User = require("../../models/User");
 const SystemStats = require("../../models/SystemStats");
 const { generateSummary } = require("../../utils/summary-util");
-const { embedNoteContent } = require("../../utils/embedding-util");
+const { embedNoteContent, deleteNoteEmbeddings } = require("../../utils/embedding-util");
 const { deleteS3 } = require("../../utils/s3-util");
+const { terminateSessionsByNoteId } = require("../../utils/chat-termination-util");
 
 const MAX_GLOBAL_STORAGE = 4 * 1024 * 1024 * 1024; // 4 GB
 
@@ -87,6 +88,12 @@ const patchRejectedNote = async (req, res, next) => {
         success: false,
         message: `Cannot reject a note with status "${note.status}".`,
       });
+    }
+
+    //If rejecting a previously approved note, clean up RAG data
+    if (note.status === 'approved') {
+      await deleteNoteEmbeddings(req.params.id);
+      await terminateSessionsByNoteId(req.params.id, note.title);
     }
 
     // Adjust storage counters and delete the file from AWS S3
