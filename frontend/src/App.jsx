@@ -13,6 +13,7 @@ import VerifyOtpPage from "./pages/auth/VerifyOtpPage";
 import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
 import NotFoundPage from "./pages/NotFoundPage";
+import ChatPage from "./pages/user/ChatPage";
 
 {
   /* Admin pages */
@@ -118,6 +119,14 @@ function App() {
             element={
               <ProtectedRoute allowedRole="user">
                 <MyNotesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/chat"
+            element={
+              <ProtectedRoute allowedRole="user">
+                <ChatPage />
               </ProtectedRoute>
             }
           />

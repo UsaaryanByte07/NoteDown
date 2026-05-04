@@ -222,6 +222,12 @@ const NavLinks = ({ isLoggedIn, user, loading, handleLogout }) => {
             >
               My Notes
             </Link>
+             <Link
+              to="/chat"
+              className="px-4 py-2 text-text-secondary hover:text-text-primary transition-colors font-medium"
+            >
+              AI Chat
+            </Link>
           </>
         )}
         <Link
@@ -301,6 +307,12 @@ const MobileNavLinks = ({ isLoggedIn, user, loading, handleLogout }) => {
               className="px-3 py-3 rounded-lg text-text-secondary hover:bg-bg-subtle hover:text-text-primary transition-colors"
             >
               📁 My Notes
+            </Link>
+            <Link
+              to="/chat"
+              className="px-3 py-3 rounded-lg text-text-secondary hover:bg-bg-subtle hover:text-text-primary transition-colors"
+            >
+              💬 AI Chat
             </Link>
           </>
         )}

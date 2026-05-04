@@ -66,6 +66,26 @@ const NoteCard = ({
         </p>
       )}
 
+      {note.summaryStatus === "generating" && (
+        <div className="flex items-center gap-2 text-xs text-info-text bg-info-light px-3 py-2 rounded-lg mb-2">
+          <Spinner size="sm" />
+          <span>Generating AI summary...</span>
+        </div>
+      )}
+
+      {note.summaryStatus === "completed" && note.aiSummary && (
+        <div className="text-sm text-text-secondary bg-bg-subtle px-3 py-2 rounded-lg mb-2 border-l-3 border-primary">
+          <p className="text-xs font-semibold text-primary mb-1">✨ AI Summary</p>
+          <p className="leading-relaxed">{note.aiSummary}</p>
+        </div>
+      )}
+
+      {note.summaryStatus === "failed" && (
+        <p className="text-xs text-text-muted italic mb-2">
+          AI summary unavailable for this note.
+        </p>
+      )}
+
       <p className="text-text-secondary text-xs mb-3">
         {note.fileName} • {(note.fileSize / (1024 * 1024)).toFixed(2)} MB
       </p>
