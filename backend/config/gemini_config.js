@@ -12,7 +12,7 @@ const getChatModel = async () => {
     await import("@google/generative-ai");
 
   _chatModel = new ChatGoogleGenerativeAI({
-    model: "gemini-1.5-flash",
+    model: "gemini-2.0-flash",
     apiKey: process.env.GEMINI_API_KEY,
     maxOutputTokens: 1024,
     temperature: 0.4,
