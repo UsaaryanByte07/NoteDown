@@ -49,8 +49,8 @@ const getEmbeddingModel = async () => {
   _embeddingModel = new GoogleGenerativeAIEmbeddings({
     model: "gemini-embedding-001",
     apiKey: process.env.GEMINI_API_KEY,
-    // Reduces Atlas storage costs while retaining strong retrieval quality.
-    dimensions: 768,
+    // gemini-embedding-001 native output: 3072 dimensions.
+    // Atlas Vector Search index must be set to numDimensions: 3072.
   });
   return _embeddingModel;
 };
