@@ -32,7 +32,7 @@ const createSession = async (req, res) => {
         ? `Chat: ${noteTitles.join(", ")}`
         : `Chat: ${noteTitles.slice(0, 3).join(", ")} +${noteTitles.length - 3} more`;
 
-    const session = new ChatSession.create({
+    const session = await ChatSession.create({
       userId: req.user._id,
       noteIds,
       title,
