@@ -24,6 +24,7 @@ const {
 const { authRoutes } = require("./routes/authRoutes");
 const { superuserRoutes } = require("./routes/superuserRoutes");
 const { noteRoutes } = require("./routes/noteRoutes");
+const { chatRoutes } = require("./routes/chatRoutes");
 
 const app = express();
 
@@ -53,6 +54,7 @@ app.set('trust proxy', 1);
 app.use("/api/auth", authRoutes);
 app.use("/api/superuser", superuserRoutes);
 app.use("/api/notes", noteRoutes);
+app.use("/api/chat", chatRoutes);
 app.use(handleMulterError);
 app.use(pageNotFoundHandler);
 

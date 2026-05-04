@@ -13,6 +13,11 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1018.0",
+    "@google/generative-ai": "^0.24.1",
+    "@langchain/core": "^1.1.43",
+    "@langchain/google-genai": "^2.1.30",
+    "@langchain/mongodb": "^1.2.0",
+    "@langchain/textsplitters": "^1.0.1",
     "bcryptjs": "^3.0.3",
     "body-parser": "^2.2.2",
     "concurrently": "^9.2.1",

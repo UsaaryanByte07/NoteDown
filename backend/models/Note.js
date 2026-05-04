@@ -46,6 +46,12 @@ const noteSchema = new mongoose.Schema(
     ocrRequired: { type: Boolean, default: false },
     extractionComplete: { type: Boolean, default: false },
     ocrToken: { type: String, default: null },
+    aiSummary: { type: String, default: null },
+    summaryStatus: {
+      type: String,
+      enum: ["none", "generating", "completed" , "failed"],
+      default: "none",
+    },
   },
   {
     timestamps: true,
