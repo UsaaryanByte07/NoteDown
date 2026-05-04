@@ -1,0 +1,19 @@
+/* ── Chat Page ─────────────────────────────────────── */
+
+/* Scrollbar styling for chat messages area */
+.chat-messages::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-messages::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+  background-color: var(--border);
+  border-radius: 3px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb:hover {
+  background-color: var(--text-muted);
+}
