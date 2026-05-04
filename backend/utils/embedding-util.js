@@ -53,7 +53,7 @@ const embedNoteContent = async (noteId) => {
       embeddingKey: "embedding",
     });
 
-    await vectorStore.addDocuments(chunks);
+    await vectorSearch.addDocuments(chunks);
 
     console.log(
       `Note ${noteId}: ${chunks.length} embeddings stored in Atlas Vector Search.`,

@@ -50,12 +50,7 @@ const patchApprovedNote = async (req, res, next) => {
     note.summaryStatus = 'generating';
     await note.save();
 
-    return res.status(200).json({
-      success: true,
-      message: "Note approved successfully. It is now visible to all users.",
-      note,
-    });
-
+    // ── Fire-and-forget: AI summary + RAG embedding ──────
     // Both run in parallel, independently. Errors are logged
     // but do NOT affect the admin's response or each other.
     generateSummary(note._id.toString()).catch((err) => {
@@ -64,6 +59,12 @@ const patchApprovedNote = async (req, res, next) => {
 
     embedNoteContent(note._id.toString()).catch((err) => {
       console.error("Background embedding generation error:", err.message);
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Note approved successfully. It is now visible to all users.",
+      note,
     });
   } catch (err) {
     console.error("Error in patchApprovedNote:", err);

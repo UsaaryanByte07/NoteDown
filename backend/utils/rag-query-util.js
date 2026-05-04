@@ -39,7 +39,12 @@ const retrieveContext = async (query, noteIds, topK = 5) => {
 const generateRAGResponse = async (userMessage, noteIds, chatHistory) => {
   const context = await retrieveContext(userMessage, noteIds);
 
-  const ChatPromtTemplate = await getPromptTemplate();
+  // Build conversation history string from chatHistory array
+  const historyText = chatHistory
+    .map((msg) => `${msg.role === "user" ? "User" : "AI"}: ${msg.content}`)
+    .join("\n");
+
+  const ChatPromptTemplate = await getPromptTemplate();
 
   const prompt = ChatPromptTemplate.fromMessages([
     [

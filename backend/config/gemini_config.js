@@ -13,7 +13,7 @@ const getChatModel = async () => {
 
   _chatModel = new ChatGoogleGenerativeAI({
     model: "gemini-1.5-flash",
-    apiKey: process.env.GOOGLE_API_KEY,
+    apiKey: process.env.GEMINI_API_KEY,
     maxOutputTokens: 1024,
     temperature: 0.4,
     safetySettings: [
@@ -48,7 +48,7 @@ const getEmbeddingModel = async () => {
 
   _embeddingModel = new GoogleGenerativeAIEmbeddings({
     model: "gemini-embedding-001",
-    apiKey: process.env.GOOGLE_API_KEY,
+    apiKey: process.env.GEMINI_API_KEY,
     // Reduces Atlas storage costs while retaining strong retrieval quality.
     dimensions: 768,
   });
