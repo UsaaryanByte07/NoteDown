@@ -9,6 +9,14 @@ const {
   VECTOR_INDEX_NAME,
 } = require("./embedding-util");
 
+/**
+ * Search for relevant text chunks from the given notes.
+ *
+ * @param {string} query - The user's question
+ * @param {string[]} noteIds - Array of noteId strings to filter by
+ * @param {number} topK - Number of chunks to retrieve (default: 5)
+ * @returns {string} - Concatenated relevant text chunks
+ */
 const retrieveContext = async (query, noteIds, topK = 5) => {
   const { MongoDBAtlasVectorSearch } = await import("@langchain/mongodb");
   const embeddingModel = await getEmbeddingModel();
@@ -21,29 +29,38 @@ const retrieveContext = async (query, noteIds, topK = 5) => {
     embeddingKey: "embedding",
   });
 
+  // Atlas Vector Search preFilter does NOT support $in.
+  // It only supports: $eq, $ne, $lt, $lte, $gt, $gte, $or, $and.
+  // NOTE: LangChain's addDocuments() flattens Document.metadata to the top
+  // level of each stored document — so the field is "noteId", NOT "metadata.noteId".
+  // The Atlas index filter field must also use path: "noteId".
+  const preFilter =
+    noteIds.length === 1
+      ? { noteId: { $eq: noteIds[0] } }
+      : { $or: noteIds.map((id) => ({ noteId: { $eq: id } })) };
+
   const results = await vectorStore.similaritySearch(query, topK, {
-    preFilter: {
-      "metadata.noteId": {
-        $in: noteIds,
-      },
-    },
+    preFilter,
   });
 
   if (results.length === 0) {
     return "";
   }
 
+  // Concatenate the retrieved chunks into a single context string
   return results.map((doc) => doc.pageContent).join("\n\n---\n\n");
 };
 
 const generateRAGResponse = async (userMessage, noteIds, chatHistory) => {
+  // 1. Retrieve relevant context from vector store
   const context = await retrieveContext(userMessage, noteIds);
 
-  // Build conversation history string from chatHistory array
+  // 2. Build conversation history string
   const historyText = chatHistory
     .map((msg) => `${msg.role === "user" ? "User" : "AI"}: ${msg.content}`)
     .join("\n");
 
+  // 3. Build the strict prompt using ChatPromptTemplate
   const ChatPromptTemplate = await getPromptTemplate();
 
   const prompt = ChatPromptTemplate.fromMessages([
@@ -69,6 +86,7 @@ RECENT CONVERSATION:
     ["human", "{question}"],
   ]);
 
+  // 4. Invoke the chain with the resolved values
   const chatModel = await getChatModel();
   const chain = prompt.pipe(chatModel);
 
@@ -78,12 +96,10 @@ RECENT CONVERSATION:
     question: userMessage,
   });
 
+  // 5. Extract text from the AIMessage
   return typeof response.content === "string"
     ? response.content.trim()
     : response.content.toString().trim();
 };
 
-module.exports = {
-  generateRAGResponse,
-  retrieveContext,
-};
+module.exports = { retrieveContext, generateRAGResponse };

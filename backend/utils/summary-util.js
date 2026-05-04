@@ -1,5 +1,4 @@
 const Note = require("../models/Note");
-
 const { getChatModel } = require("../config/gemini_config");
 
 const generateSummary = async (noteId) => {
