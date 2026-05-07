@@ -104,6 +104,7 @@ const NotesSection = ({ title, notes, emptyMessage, actionLoading, onApprove, on
                         showStatus={true}
                         showUploader={true}
                         showActions={true}
+                        isAdminView={true}
                         onApprove={onApprove}   // null = hide Approve button
                         onReject={onReject}     // null = hide Reject button
                         actionLoading={actionLoading === note._id}

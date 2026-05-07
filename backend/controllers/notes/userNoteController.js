@@ -92,6 +92,21 @@ const postUploadNote = async (req, res, next) => {
       });
     }
 
+    // Task 8: Enforce unique note title per user
+    const existingNote = await Note.findOne({
+      uploader: req.user._id,
+      title: title.trim(),
+    });
+    if (existingNote) {
+      fs.unlink(req.file.path, () => {});
+      return res.status(409).json({
+        success: false,
+        message:
+          "A note with this name already exists. Please choose a different name.",
+        errorCode: "DUPLICATE_NOTE_TITLE",
+      });
+    }
+
     if (req.file.size > MAX_FILE_SIZE) {
       fs.unlink(req.file.path, () => {});
       return res.status(400).json({

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import Spinner from "../Spinner";
 
 const NoteCard = ({
@@ -6,12 +7,17 @@ const NoteCard = ({
   showActions = false,
   showUploader = false,
   showDelete = false,
+  isAdminView = false,  // NEW: hides AI summary block for admin
   onDelete,
   deleteLoading = false,
   onApprove,
   onReject,
   actionLoading = false,
+  onRetrySummary,  // NEW: callback for retrying AI summary generation
 }) => {
+  // NEW: tracks whether the full AI summary is expanded or collapsed
+  const [summaryExpanded, setSummaryExpanded] = useState(false);
+
   const getFileIcon = (mimeType) => {
     if (mimeType === "application/pdf") return "📕";
     if (mimeType?.includes("word")) return "📘";
@@ -66,24 +72,57 @@ const NoteCard = ({
         </p>
       )}
 
-      {note.summaryStatus === "generating" && (
-        <div className="flex items-center gap-2 text-xs text-info-text bg-info-light px-3 py-2 rounded-lg mb-2">
-          <Spinner size="sm" />
-          <span>Generating AI summary...</span>
-        </div>
-      )}
+      {/* ── AI Summary block — hidden for admin view ── */}
+      {!isAdminView && (
+        <>
+          {note.summaryStatus === "generating" && (
+            <div className="flex items-center gap-2 text-xs text-info-text bg-info-light px-3 py-2 rounded-lg mb-2">
+              <Spinner size="sm" />
+              <span>Generating AI summary...</span>
+            </div>
+          )}
 
-      {note.summaryStatus === "completed" && note.aiSummary && (
-        <div className="text-sm text-text-secondary bg-bg-subtle px-3 py-2 rounded-lg mb-2 border-l-3 border-primary">
-          <p className="text-xs font-semibold text-primary mb-1">✨ AI Summary</p>
-          <p className="leading-relaxed">{note.aiSummary}</p>
-        </div>
-      )}
+          {note.summaryStatus === "completed" && note.aiSummary && (
+            <div className="text-sm text-text-secondary bg-bg-subtle px-3 py-2 rounded-lg mb-2 border-l-4 border-primary">
+              <p className="text-xs font-semibold text-primary mb-1">✨ AI Summary</p>
+              {/* CSS line-clamp-1 visually truncates to 1 rendered line when collapsed.
+                  This works regardless of whether the string contains literal \n characters. */}
+              <p
+                className="leading-relaxed"
+                style={summaryExpanded ? {} : {
+                  display: "-webkit-box",
+                  WebkitLineClamp: 1,
+                  WebkitBoxOrient: "vertical",
+                  overflow: "hidden",
+                }}
+              >
+                {note.aiSummary}
+              </p>
+              <button
+                onClick={() => setSummaryExpanded((prev) => !prev)}
+                className="text-xs text-primary hover:underline mt-1 font-medium"
+              >
+                {summaryExpanded ? "See less ↑" : "...see more"}
+              </button>
+            </div>
+          )}
 
-      {note.summaryStatus === "failed" && (
-        <p className="text-xs text-text-muted italic mb-2">
-          AI summary unavailable for this note.
-        </p>
+          {note.summaryStatus === "failed" && (
+            <div className="flex items-center gap-2 mb-2">
+              <p className="text-xs text-text-muted italic">
+                AI summary unavailable for this note.
+              </p>
+              {onRetrySummary && (
+                <button
+                  onClick={() => onRetrySummary(note._id)}
+                  className="text-xs text-primary hover:underline font-medium flex-shrink-0"
+                >
+                  Retry ↻
+                </button>
+              )}
+            </div>
+          )}
+        </>
       )}
 
       <p className="text-text-secondary text-xs mb-3">
@@ -146,6 +185,7 @@ const NoteCard = ({
         </p>
       )}
 
+      {/* ── Admin approve / reject actions ── */}
       {showActions && (onApprove || onReject) && (
         <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.75rem" }}>
           {onApprove && (
@@ -161,37 +201,47 @@ const NoteCard = ({
                 borderRadius: "0.5rem",
                 fontSize: "0.75rem",
                 fontWeight: 600,
-                cursor: "pointer",
+                cursor: actionLoading ? "not-allowed" : "pointer",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 gap: "0.25rem",
+                opacity: actionLoading ? 0.7 : 1,
               }}
             >
+              {/* Only Approve shows spinner while loading */}
               {actionLoading ? <Spinner size="sm" /> : "✅ Approve"}
             </button>
           )}
           {onReject && (
             <button
               onClick={() => onReject(note._id)}
+              // Reject is DISABLED (not loading) while action is in progress
               disabled={actionLoading}
               style={{
                 flex: 1,
                 padding: "0.5rem",
-                backgroundColor: "var(--danger-light)",
-                color: "var(--danger-text)",
-                border: "1px solid var(--danger)",
+                // Visually muted when disabled to communicate it's locked, not loading
+                backgroundColor: actionLoading
+                  ? "var(--bg-subtle)"
+                  : "var(--danger-light)",
+                color: actionLoading
+                  ? "var(--text-muted)"
+                  : "var(--danger-text)",
+                border: `1px solid ${actionLoading ? "var(--border)" : "var(--danger)"}`,
                 borderRadius: "0.5rem",
                 fontSize: "0.75rem",
                 fontWeight: 600,
-                cursor: "pointer",
+                cursor: actionLoading ? "not-allowed" : "pointer",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 gap: "0.25rem",
+                opacity: actionLoading ? 0.5 : 1,
+                transition: "background-color 0.2s, color 0.2s, border-color 0.2s",
               }}
             >
-              {actionLoading ? <Spinner size="sm" /> : "❌ Reject"}
+              ❌ Reject
             </button>
           )}
         </div>

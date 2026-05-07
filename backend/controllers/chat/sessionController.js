@@ -4,7 +4,31 @@ const Note = require("../../models/Note");
 
 const createSession = async (req, res) => {
   try {
-    const { noteIds } = req.body;
+    const { noteIds, title } = req.body;
+
+    // ── Validate user-provided title (Task 1) ───────────────────────
+    if (!title || typeof title !== "string" || title.trim().length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide a title for your chat session.",
+      });
+    }
+
+    const trimmedTitle = title.trim().slice(0, 80); // max 80 chars
+
+    // ── Unique title per user (Task 8) ──────────────────────────────
+    const existing = await ChatSession.findOne({
+      userId: req.user._id,
+      title: trimmedTitle,
+    });
+    if (existing) {
+      return res.status(409).json({
+        success: false,
+        errorCode: "DUPLICATE_SESSION_TITLE",
+        message:
+          "A chat session with this title already exists. Please choose a different name.",
+      });
+    }
 
     if (!noteIds || !Array.isArray(noteIds) || noteIds.length === 0) {
       return res.status(400).json({
@@ -26,16 +50,10 @@ const createSession = async (req, res) => {
       });
     }
 
-    const noteTitles = notes.map((note) => note.title);
-    const title =
-      noteTitles.length <= 3
-        ? `Chat: ${noteTitles.join(", ")}`
-        : `Chat: ${noteTitles.slice(0, 3).join(", ")} +${noteTitles.length - 3} more`;
-
     const session = await ChatSession.create({
       userId: req.user._id,
       noteIds,
-      title,
+      title: trimmedTitle,
     });
 
     return res.status(201).json({

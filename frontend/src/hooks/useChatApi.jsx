@@ -8,10 +8,10 @@ const useChatApi = () => {
   const getSession = (sessionId) =>
     executeRequest(`/api/chat/sessions/${sessionId}`);
 
-  const createSession = (noteIds) =>
+  const createSession = (noteIds, title) =>
     executeRequest("/api/chat/sessions", {
       method: "POST",
-      body: JSON.stringify({ noteIds }),
+      body: JSON.stringify({ noteIds, title }),
     });
 
   const deleteSession = (sessionId) =>

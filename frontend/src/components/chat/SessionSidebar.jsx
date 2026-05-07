@@ -88,11 +88,11 @@ const SessionSidebar = ({
                   </span>
                 )}
 
-                {/* Delete button (visible on hover) */}
+                {/* Delete button — always visible for mobile/desktop accessibility */}
                 <button
                   onClick={(e) => handleDelete(e, session._id)}
                   disabled={deletingId === session._id}
-                  className="opacity-0 group-hover:opacity-100 text-text-muted hover:text-danger transition-all flex-shrink-0 p-1"
+                  className="text-text-muted hover:text-danger transition-all flex-shrink-0 p-1"
                   title="Delete session"
                 >
                   {deletingId === session._id ? (

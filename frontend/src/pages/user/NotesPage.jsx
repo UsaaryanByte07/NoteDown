@@ -1,8 +1,14 @@
 import useFetch from '../../hooks/useFetch';
+import useApi from '../../hooks/useApi';
 import NoteCard from '../../components/notes/NoteCard';
 
 const NotesPage = () => {
     const { data, loading, error } = useFetch('/api/notes');
+    const { executeRequest } = useApi();
+
+    const handleRetrySummary = async (noteId) => {
+        await executeRequest(`/api/notes/${noteId}/retry-summary`, { method: 'PATCH' });
+    };
 
     return (
         <div className="min-h-[80vh] bg-bg-subtle py-10 px-6">
@@ -21,7 +27,7 @@ const NotesPage = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {data?.notes?.map((note) => (
-                        <NoteCard key={note._id} note={note} />
+                        <NoteCard key={note._id} note={note} onRetrySummary={handleRetrySummary} />
                     ))}
                 </div>
             </div>
