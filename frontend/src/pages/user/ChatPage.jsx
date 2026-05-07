@@ -44,9 +44,9 @@ const ChatPage = () => {
     }
   }, []);
 
-  // Create a new session
-  const handleCreateSession = useCallback(async (noteIds) => {
-    const res = await chatApi.createSession(noteIds);
+  // Create a new session — title is now provided by the user
+  const handleCreateSession = useCallback(async (noteIds, title) => {
+    const res = await chatApi.createSession(noteIds, title);
     if (res.success) {
       await fetchSessions();
       await handleOpenSession(res.data.session._id);
@@ -71,13 +71,27 @@ const ChatPage = () => {
 
   //Send a message
   const handleSendMessage = useCallback(async (message) => {
+    // ── Optimistic update: show user message immediately ──────────────
+    const tempUserMsg = {
+      _id: `temp-${Date.now()}`,   // temporary id, replaced by DB id on success
+      role: "user",
+      content: message,
+      createdAt: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, tempUserMsg]);
+
     const res = await chatApi.sendMessage(activeSessionId, message);
+
     if (res.success) {
+      // Replace the temp message with the real one from DB, then add AI reply
       setMessages((prev) => [
-        ...prev,
+        ...prev.filter((m) => m._id !== tempUserMsg._id),
         res.data.userMessage,
         res.data.aiMessage,
       ]);
+    } else {
+      // Remove the optimistic message on failure so the UI stays consistent
+      setMessages((prev) => prev.filter((m) => m._id !== tempUserMsg._id));
     }
     return res;
   }, [activeSessionId]);

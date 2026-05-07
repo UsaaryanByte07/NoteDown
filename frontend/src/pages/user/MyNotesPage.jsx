@@ -45,6 +45,13 @@ const MyNotesPage = () => {
     }
   };
 
+  // Task 4: retry AI summary generation for notes with summaryStatus === 'failed'
+  const handleRetrySummary = async (noteId) => {
+    await executeRequest(`/api/notes/${noteId}/retry-summary`, { method: "PATCH" });
+    // Refresh so that generating status shows up
+    if (refetch) refetch(false);
+  };
+
   return (
     <div className="min-h-[80vh] bg-bg-subtle py-10 px-6">
       <div className="max-w-5xl mx-auto">
@@ -74,6 +81,7 @@ const MyNotesPage = () => {
               showDelete={true}
               onDelete={handleDelete}
               deleteLoading={deleteLoading === note._id}
+              onRetrySummary={handleRetrySummary}
             />
           ))}
         </div>

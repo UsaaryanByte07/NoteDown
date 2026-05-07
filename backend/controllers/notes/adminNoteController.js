@@ -179,9 +179,57 @@ const getAllNotesForAdmin = async (req, res, next) => {
   }
 };
 
+/**
+ * PATCH /api/notes/:id/retry-summary
+ * Allows retrying AI summary generation for a note whose summaryStatus is 'failed'.
+ * Only works on approved notes — callers can be users (own notes) or logged-in users
+ * seeing the public notes page.
+ */
+const patchRetrySummary = async (req, res, next) => {
+  try {
+    const note = await Note.findById(req.params.id);
+    if (!note) {
+      return res.status(404).json({ success: false, message: "Note not found" });
+    }
+
+    if (note.status !== "approved") {
+      return res.status(400).json({
+        success: false,
+        message: "Summary can only be retried for approved notes.",
+      });
+    }
+
+    if (note.summaryStatus !== "failed") {
+      return res.status(400).json({
+        success: false,
+        message: `Summary retry is only available when summaryStatus is 'failed'. Current status: '${note.summaryStatus}'.`,
+      });
+    }
+
+    // Reset to generating and fire background task
+    await Note.findByIdAndUpdate(req.params.id, { summaryStatus: "generating" });
+
+    generateSummary(req.params.id.toString()).catch((err) => {
+      console.error("Background retry summary error:", err.message);
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "AI summary generation has been re-queued.",
+    });
+  } catch (err) {
+    console.error("Error in patchRetrySummary:", err);
+    return res.status(500).json({
+      success: false,
+      message: "An error occurred. Please try again.",
+    });
+  }
+};
+
 module.exports = {
   getPendingNotes,
   patchApprovedNote,
   patchRejectedNote,
   getAllNotesForAdmin,
+  patchRetrySummary,
 };

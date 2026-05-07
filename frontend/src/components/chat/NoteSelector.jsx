@@ -3,6 +3,9 @@ import Spinner from "../Spinner";
 
 const NoteSelector = ({ notes, onCreateSession, onCancel, loading }) => {
   const [selectedIds, setSelectedIds] = useState([]);
+  // Task 1: user defines the chat session title themselves
+  const [sessionTitle, setSessionTitle] = useState("");
+  const [titleError, setTitleError] = useState("");
 
   const toggleNote = (noteId) => {
     setSelectedIds((prev) =>
@@ -14,7 +17,23 @@ const NoteSelector = ({ notes, onCreateSession, onCancel, loading }) => {
 
   const handleStart = async () => {
     if (selectedIds.length === 0) return;
-    await onCreateSession(selectedIds);
+
+    const trimmedTitle = sessionTitle.trim();
+    if (!trimmedTitle) {
+      setTitleError("Please enter a title for this chat session.");
+      return;
+    }
+    setTitleError("");
+
+    const res = await onCreateSession(selectedIds, trimmedTitle);
+
+    // Task 8: handle duplicate title error from backend
+    if (!res.success && res.data?.errorCode === "DUPLICATE_SESSION_TITLE") {
+      setTitleError(
+        res.data.message ||
+          "A chat session with this title already exists. Please choose a different name.",
+      );
+    }
   };
 
   return (
@@ -22,22 +41,50 @@ const NoteSelector = ({ notes, onCreateSession, onCancel, loading }) => {
       {/* ── Header ──────────────────────────────────────── */}
       <div className="px-6 py-4 border-b border-border">
         <h2 className="text-lg font-bold text-text-primary">
-          Select Notes for Chat
+          New Chat Session
         </h2>
         <p className="text-sm text-text-secondary mt-1">
-          Choose one or more notes as context for your AI chat session.
+          Give your session a title and choose one or more notes as context.
         </p>
+
+        {/* ── Session Title Input ── Task 1 ──────────────── */}
+        <div className="mt-3">
+          <label
+            htmlFor="session-title-input"
+            className="text-xs font-semibold text-text-secondary block mb-1"
+          >
+            Session Title <span className="text-danger">*</span>
+          </label>
+          <input
+            id="session-title-input"
+            type="text"
+            value={sessionTitle}
+            onChange={(e) => {
+              setSessionTitle(e.target.value);
+              if (titleError) setTitleError("");
+            }}
+            placeholder="e.g. Study session — Chapter 3"
+            maxLength={80}
+            className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-bg-subtle text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+          />
+          {titleError && (
+            <p className="text-xs text-danger mt-1">{titleError}</p>
+          )}
+        </div>
 
         {/* ── Important Notice ────────────────────────────── */}
         <div className="mt-3 px-3 py-2 bg-warning-light text-warning-text text-xs rounded-lg border border-warning">
           ⚠️ <strong>Important:</strong> Once you start chatting, you cannot add
-          more notes to this session. You'll need to create a new session if you
-          want different notes.
+          more notes to this session. You&apos;ll need to create a new session if
+          you want different notes.
         </div>
       </div>
 
       {/* ── Notes Grid ──────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto p-4">
+        <p className="text-xs font-semibold text-text-secondary mb-3">
+          Select notes for context
+        </p>
         {notes.length === 0 && (
           <p className="text-center text-text-muted py-8">
             No approved notes available yet.
