@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const maintainanceModeSchema = new mongoose.Schema(
+const maintenanceModeSchema = new mongoose.Schema(
   {
     isActive: { type: Boolean, default: false },
     message: { type: String, default: "", trim: true },
@@ -28,4 +28,4 @@ maintenanceModeSchema.statics.getState = async function () {
     return state;
 }
 
-module.exports = mongoose.model("MaintenanceMode", maintainanceModeSchema);
+module.exports = mongoose.model("MaintenanceMode", maintenanceModeSchema);

@@ -8,6 +8,7 @@ const cookieParser = require("cookie-parser");
 require("dotenv").config();
 
 const { url } = require("./config/db_config");
+const { setupAdminJS } = require('./config/adminjs-setup');
 const rootDir = require("./utils/path-util");
 const { startOcrCleanupJob } = require("./utils/ocr-cleanup-job");
 
@@ -71,6 +72,9 @@ async function startServer() {
   try {
     await mongoose.connect(url);
     console.log("Connected to MongoDB successfully!");
+
+    // AdminJS Root Panel
+    await setupAdminJS(app);
 
     // Initialize SystemStats if it doesn't exist
     await SystemStats.getStats();
