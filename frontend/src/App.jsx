@@ -43,8 +43,10 @@ import "./App.css";
 function App() {
   const [maintenance, setMaintenance] = useState(null); // null = not checked yet
 
+  const API_BASE = import.meta.env.VITE_API_URL || "";
+
   useEffect(() => {
-    fetch("/api/maintenance-status")
+    fetch(`${API_BASE}/api/maintenance-status`)
       .then((r) => r.json())
       .then((data) => {
         if (data.isActive) {

@@ -34,6 +34,25 @@ const setupAdminJS = async (app) => {
       favicon: '/favicon.ico',
     },
 
+    // Override the login form "Email" field label → "Username"
+    // translations MUST be wrapped with the language key ('en') because adminjs.i18n.js does:
+    //   Object.keys(translations).forEach(lang => addResourceBundle(lang, ...translations[lang]))
+    // Without the 'en' wrapper, 'components' is treated as a language code and silently ignored.
+    locale: {
+      language: 'en',
+      translations: {
+        en: {
+          components: {
+            Login: {
+              properties: {
+                email: 'Username',
+              },
+            },
+          },
+        },
+      },
+    },
+
     resources: [
       buildResourceConfig('systemUser', SystemUser),
       buildResourceConfig('user', User),
