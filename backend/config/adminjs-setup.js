@@ -12,6 +12,7 @@ const SystemStats = require("../models/SystemStats");
 const MaintenanceMode = require("../models/MaintenanceMode");
 
 const { buildResourceConfig } = require("./adminjs-rbac");
+const { getClientIp } = require("../utils/getClientIp");
 
 const setupAdminJS = async (app) => {
   const { default: AdminJS } = await import("adminjs");
@@ -124,12 +125,8 @@ const setupAdminJS = async (app) => {
       if (!state.isActive) {
         return res.status(200).json({ isActive: false, message: "", endsAt: null });
       }
-      // Check if this requester is whitelisted — if so, tell the frontend the site is up
-      const rawIp =
-        req.ip ||
-        req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
-        req.socket?.remoteAddress;
-      const clientIp = rawIp?.startsWith("::ffff:") ? rawIp.slice(7) : rawIp;
+      // Check if this requester is whitelisted — uses CF-Connecting-IP → XFF → socket
+      const clientIp = getClientIp(req);
       if (state.whitelistedIps.includes(clientIp)) {
         return res.status(200).json({ isActive: false, message: "", endsAt: null });
       }
@@ -146,15 +143,11 @@ const setupAdminJS = async (app) => {
   // returns the exact IP the server sees for this request (after ::ffff: normalization)
   // use this to find out which IP to add to the maintenance whitelist
   app.get("/api/my-ip", (req, res) => {
-    const rawIp =
-      req.ip ||
-      req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
-      req.socket?.remoteAddress;
-    const clientIp = rawIp?.startsWith("::ffff:") ? rawIp.slice(7) : rawIp;
+    const clientIp = getClientIp(req);
     return res.status(200).json({
-      ip: clientIp,
-      raw: rawIp,
-      // Full diagnostic info — useful for debugging proxy chains on Render/Heroku
+      ip: clientIp,           // ← whitelist THIS value
+      // Full diagnostic chain — useful for debugging proxy setups
+      "cf-connecting-ip": req.headers["cf-connecting-ip"] || null,
       "x-forwarded-for": req.headers["x-forwarded-for"] || null,
       "x-real-ip": req.headers["x-real-ip"] || null,
       "socket-remote-address": req.socket?.remoteAddress || null,

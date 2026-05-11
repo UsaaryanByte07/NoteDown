@@ -1,4 +1,5 @@
 const MaintainanceMode = require("../models/MaintenanceMode");
+const { getClientIp } = require("../utils/getClientIp");
 
 const maintenanceMiddleware = async (req, res, next) => {
   try {
@@ -26,13 +27,8 @@ const maintenanceMiddleware = async (req, res, next) => {
       return next();
     }
 
-    // Normalize the client IP: strip IPv6-mapped IPv4 prefix (::ffff:x.x.x.x → x.x.x.x)
-    // so that whitelist entries always work regardless of whether the OS uses IPv4 or IPv6 sockets
-    const rawIp =
-      req.ip ||
-      req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
-      req.socket?.remoteAddress;
-    const clientIp = rawIp?.startsWith("::ffff:") ? rawIp.slice(7) : rawIp;
+    // Use shared helper: handles CF-Connecting-IP → X-Forwarded-For → socket fallback
+    const clientIp = getClientIp(req);
 
     if (state.whitelistedIps.includes(clientIp)) {
       return next();
