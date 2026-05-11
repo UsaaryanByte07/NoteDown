@@ -1,3 +1,6 @@
 /node_modules
 .env
 /public
+
+# AdminJS auto-generated build cache (regenerated on every server start)
+.adminjs

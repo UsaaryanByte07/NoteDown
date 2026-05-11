@@ -18,6 +18,11 @@ export default defineConfig({
         target: 'http://localhost:3010',
         changeOrigin: true,
       },
+      // Proxy /root so AdminJS panel at /root/panel is accessible via Vite dev server
+      '/root': {
+        target: 'http://localhost:3010',
+        changeOrigin: true,
+      },
     },
   },
 })

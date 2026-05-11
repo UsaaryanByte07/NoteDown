@@ -1,5 +1,5 @@
 import { useState } from "react";
-const BASE_URL = import.meta.env.VITE_API_URL || '';
+const BASE_URL = import.meta.env.VITE_API_URL || "";
 
 // WHY no useEffect? Mutations (POST/PUT/DELETE) are triggered by USER ACTIONS,
 // not automatically when the component mounts. So we return an execute() function.
@@ -31,13 +31,29 @@ const useApi = () => {
       // so callers can access result.data.cooldownRemaining, result.data.locked, etc.
       const data = await res.json().catch(() => ({}));
 
+      if (data.maintenance === true) {
+        // Store in sessionStorage so MaintenancePage can access it
+        sessionStorage.setItem(
+          "maintenanceInfo",
+          JSON.stringify({ message: data.message, endsAt: data.endsAt }),
+        );
+        // Reload — App.jsx will pick up the maintenance status on re-mount
+        window.location.reload();
+        return { success: false, maintenance: true };
+      }
+
       setStatusCode(res.status);
 
       if (!res.ok) {
         // For validation errors (data.errors array), expose the specific message instead of just 422
         let msg = data.message;
-        if (!msg && data.errors && Array.isArray(data.errors) && data.errors.length > 0) {
-            msg = data.errors[0].msg;
+        if (
+          !msg &&
+          data.errors &&
+          Array.isArray(data.errors) &&
+          data.errors.length > 0
+        ) {
+          msg = data.errors[0].msg;
         }
         msg = msg || `Something went wrong (${res.status})`;
         setError(msg);
