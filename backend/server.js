@@ -30,6 +30,9 @@ const { chatRoutes } = require("./routes/chatRoutes");
 
 const app = express();
 
+
+app.set("trust proxy", 1);
+
 //Cors Middleware
 app.use(
   cors({
