@@ -25,21 +25,23 @@ const setupAdminJS = async (app) => {
   });
 
   const admin = new AdminJS({
-    rootPath: "/root/panel",
+    rootPath: '/root/panel',
+    loginPath: '/root/panel/login',
+    logoutPath: '/root/panel/logout',
     branding: {
-      companyName: "NoteDown — Root Panel",
+      companyName: 'NoteDown — Root Panel',
       logo: false,
-      favicon: "/favicon.ico",
+      favicon: '/favicon.ico',
     },
 
     resources: [
-      buildResourceConfig("systemUser", SystemUser),
-      buildResourceConfig("user", User),
-      buildResourceConfig("note", Note),
-      buildResourceConfig("chatSession", ChatSession),
-      buildResourceConfig("chatMessage", ChatMessage),
-      buildResourceConfig("systemStats", SystemStats),
-      buildResourceConfig("maintenance", MaintenanceMode),
+      buildResourceConfig('systemUser', SystemUser),
+      buildResourceConfig('user', User),
+      buildResourceConfig('note', Note),
+      buildResourceConfig('chatSession', ChatSession),
+      buildResourceConfig('chatMessage', ChatMessage),
+      buildResourceConfig('systemStats', SystemStats),
+      buildResourceConfig('maintenance', MaintenanceMode),
     ],
   });
 
@@ -71,6 +73,7 @@ const setupAdminJS = async (app) => {
 
         return {
           id: systemUser._id.toString(),
+          email: systemUser.username, // AdminJS v7 CurrentUserNav requires email to render the user dropdown
           name: systemUser.name,
           username: systemUser.username,
           role: systemUser.role,
@@ -99,6 +102,18 @@ const setupAdminJS = async (app) => {
   app.get("/api/maintenance-status", async (req, res) => {
     try {
       const state = await MaintenanceMode.getState();
+      if (!state.isActive) {
+        return res.status(200).json({ isActive: false, message: "", endsAt: null });
+      }
+      // Check if this requester is whitelisted — if so, tell the frontend the site is up
+      const rawIp =
+        req.ip ||
+        req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
+        req.socket?.remoteAddress;
+      const clientIp = rawIp?.startsWith("::ffff:") ? rawIp.slice(7) : rawIp;
+      if (state.whitelistedIps.includes(clientIp)) {
+        return res.status(200).json({ isActive: false, message: "", endsAt: null });
+      }
       return res.status(200).json({
         isActive: state.isActive,
         message: state.message || "",
@@ -107,6 +122,17 @@ const setupAdminJS = async (app) => {
     } catch (err) {
       return res.status(500).json({ isActive: false });
     }
+  });
+
+  // returns the exact IP the server sees for this request (after ::ffff: normalization)
+  // use this to find out which IP to add to the maintenance whitelist
+  app.get("/api/my-ip", (req, res) => {
+    const rawIp =
+      req.ip ||
+      req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
+      req.socket?.remoteAddress;
+    const clientIp = rawIp?.startsWith("::ffff:") ? rawIp.slice(7) : rawIp;
+    return res.status(200).json({ ip: clientIp, raw: rawIp });
   });
 
   if (process.env.NODE_ENV !== 'production') {

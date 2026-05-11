@@ -1,4 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useEffect, useState } from "react";
+import Spinner from "./components/Spinner";
 import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PublicRoute from "./components/PublicRoute";
@@ -7,6 +9,7 @@ import PublicSuperuserRoute from "./components/superuser/PublicSuperuserRoute";
 import { SuperuserProvider } from "./context/superuser/superuserContext";
 
 import HomePage from "./pages/HomePage";
+import MaintenancePage from "./pages/MaintenancePage";
 import LoginPage from "./pages/auth/LoginPage";
 import SignupPage from "./pages/auth/SignupPage";
 import VerifyOtpPage from "./pages/auth/VerifyOtpPage";
@@ -38,6 +41,36 @@ import SuperuserAddAdminPage from "./pages/superuser/SuperuserAddAdminPage";
 import "./App.css";
 
 function App() {
+  const [maintenance, setMaintenance] = useState(null); // null = not checked yet
+
+  useEffect(() => {
+    fetch("/api/maintenance-status")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.isActive) {
+          setMaintenance({ message: data.message, endsAt: data.endsAt });
+        } else {
+          setMaintenance(false);
+        }
+      })
+      .catch(() => setMaintenance(false)); // On error, render normally
+  }, []);
+
+  // Still checking
+  if (maintenance === null) {
+    return <Spinner size="lg" />;
+  }
+
+  // In maintenance
+  if (maintenance !== false) {
+    return (
+      <MaintenancePage
+        message={maintenance.message}
+        endsAt={maintenance.endsAt}
+      />
+    );
+  }
+
   return (
     <BrowserRouter>
       <Routes>

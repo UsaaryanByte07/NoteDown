@@ -49,7 +49,7 @@ const canCreate = (currentAdmin, domain) => {
 };
 
 const canUpdate = (currentAdmin, domain) => {
-  canCreate(currentAdmin, domain);
+  return canCreate(currentAdmin, domain);
 };
 
 const canDelete = (currentAdmin, domain) => {
@@ -190,20 +190,12 @@ const buildResourceConfig = (resourceKey, Model) => {
     };
   }
 
-  if (resourceKey === "maintenance") {
-    // List only shows readable summary fields
-    baseConfig.options.listProperties = [
-      "isActive",
-      "message",
-      "endsAt",
-      "activatedAt",
-    ];
-    baseConfig.options.editProperties = [
-      "isActive",
-      "message",
-      "endsAt",
-      "whitelistedIps",
-    ];
+  if (resourceKey === 'maintenance') {
+    baseConfig.options.actions.new    = { isAccessible: () => false };
+    baseConfig.options.actions.delete = { isAccessible: () => false };
+    baseConfig.options.listProperties = ['isActive', 'message', 'endsAt', 'activatedAt'];
+    baseConfig.options.editProperties = ['isActive', 'message', 'endsAt', 'whitelistedIps'];
+    baseConfig.options.showProperties = ['isActive', 'message', 'endsAt', 'activatedAt', 'whitelistedIps', 'updatedAt'];
   }
 
   return baseConfig;

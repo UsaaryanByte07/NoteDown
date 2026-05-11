@@ -21,11 +21,16 @@ const maintenanceModeSchema = new mongoose.Schema(
 );
 
 maintenanceModeSchema.statics.getState = async function () {
-    let state = await this.findOne();
-    if (!state) {
-        state = await this.create({});
+    const docs = await this.find().sort({ updatedAt: -1 });
+    if (docs.length === 0) {
+        return await this.create({});
     }
-    return state;
+    if (docs.length > 1) {
+        const [latest, ...extras] = docs;
+        await this.deleteMany({ _id: { $in: extras.map((d) => d._id) } });
+        return latest;
+    }
+    return docs[0];
 }
 
 module.exports = mongoose.model("MaintenanceMode", maintenanceModeSchema);

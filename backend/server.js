@@ -14,6 +14,7 @@ const { startOcrCleanupJob } = require("./utils/ocr-cleanup-job");
 
 //Importing the Models
 const SystemStats = require("./models/SystemStats");
+const MaintenanceMode = require("./models/MaintenanceMode");
 
 //Importing the Middlewares
 const {
@@ -22,12 +23,8 @@ const {
 } = require("./middlewares/errorHandlerMiddleware");
 const { maintenanceMiddleware } = require('./middlewares/maintenanceMiddleware');
 
-//Importing the Models
-const MaintenanceMode = require("./models/MaintenanceMode");
-
 //Importing the Routers
 const { authRoutes } = require("./routes/authRoutes");
-const { superuserRoutes } = require("./routes/superuserRoutes");
 const { noteRoutes } = require("./routes/noteRoutes");
 const { chatRoutes } = require("./routes/chatRoutes");
 
@@ -42,8 +39,14 @@ app.use(
 );
 
 //Body Parser Middleware
-app.use(express.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use((req, res, next) => {
+  if (req.path.startsWith('/root')) return next();
+  express.json()(req, res, next);
+});
+app.use((req, res, next) => {
+  if (req.path.startsWith('/root')) return next();
+  bodyParser.urlencoded({ extended: true })(req, res, next);
+});
 
 //Cookie Parser Middleware
 app.use(cookieParser());
@@ -58,14 +61,6 @@ app.use(express.static(path.join(rootDir, "public")));
 // Set app.set('trust proxy', 1) in server.js to ensure the real IP is used from the X-Forwarded-For header.
 app.set("trust proxy", 1);
 
-//Route Registration
-app.use("/api/auth", authRoutes);
-app.use("/api/superuser", superuserRoutes);
-app.use("/api/notes", noteRoutes);
-app.use("/api/chat", chatRoutes);
-app.use(handleMulterError);
-app.use(pageNotFoundHandler);
-
 const PORT = process.env.PORT || 3010;
 
 async function startServer() {
@@ -73,14 +68,22 @@ async function startServer() {
     await mongoose.connect(url);
     console.log("Connected to MongoDB successfully!");
 
+    // Initialize SystemStats if it doesn't exist
+    await SystemStats.getStats();
+    console.log("SystemStats initialized.");
+
+    await MaintenanceMode.getState();
+    console.log("MaintenanceMode singleton initialized.");
+
     // AdminJS Root Panel
     await setupAdminJS(app);
 
-    // Initialize SystemStats if it doesn't exist
-    await SystemStats.getStats();
-    await MaintenanceMode.getState();
-    console.log("MaintenanceMode singleton initialized.");
-    console.log("SystemStats initialized.");
+    app.use("/api/auth", authRoutes);
+    app.use("/api/notes", noteRoutes);
+    app.use("/api/chat", chatRoutes);
+
+    app.use(handleMulterError);
+    app.use(pageNotFoundHandler);
 
     app.listen(PORT, () => {
       console.log(`Server is running on PORT:http://localhost:${PORT}`);
