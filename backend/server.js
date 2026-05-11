@@ -31,7 +31,11 @@ const { chatRoutes } = require("./routes/chatRoutes");
 const app = express();
 
 
-app.set("trust proxy", 1);
+// Trust all private/internal IP ranges as proxies (covers Render, Heroku, Railway, Nginx, etc.)
+// Render routes requests through multiple internal hops using 10.x.x.x IPs.
+// 'uniquelocal' covers 10.x.x.x / 172.16-31.x.x / 192.168.x.x so Express skips
+// ALL internal hops and reads the real client IP from X-Forwarded-For.
+app.set("trust proxy", "loopback, linklocal, uniquelocal");
 
 //Cors Middleware
 app.use(
@@ -59,10 +63,6 @@ app.use(maintenanceMiddleware);
 
 //Static Files Middleware
 app.use(express.static(path.join(rootDir, "public")));
-
-//If your app runs behind a reverse proxy (Nginx, Render, Vercel, Cloudflare), express-rate-limit may see the proxy's IP instead of the real client IP.
-// Set app.set('trust proxy', 1) in server.js to ensure the real IP is used from the X-Forwarded-For header.
-app.set("trust proxy", 1);
 
 const PORT = process.env.PORT || 3010;
 

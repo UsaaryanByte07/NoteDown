@@ -151,7 +151,15 @@ const setupAdminJS = async (app) => {
       req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
       req.socket?.remoteAddress;
     const clientIp = rawIp?.startsWith("::ffff:") ? rawIp.slice(7) : rawIp;
-    return res.status(200).json({ ip: clientIp, raw: rawIp });
+    return res.status(200).json({
+      ip: clientIp,
+      raw: rawIp,
+      // Full diagnostic info — useful for debugging proxy chains on Render/Heroku
+      "x-forwarded-for": req.headers["x-forwarded-for"] || null,
+      "x-real-ip": req.headers["x-real-ip"] || null,
+      "socket-remote-address": req.socket?.remoteAddress || null,
+      "req.ip": req.ip || null,
+    });
   });
 
   if (process.env.NODE_ENV !== 'production') {
