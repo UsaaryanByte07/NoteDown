@@ -1,5 +1,5 @@
 const Note = require("../models/Note");
-const { getChatModel } = require("../config/gemini_config");
+const { invokeChatModel } = require("../config/gemini_config");
 
 const generateSummary = async (noteId) => {
   try {
@@ -27,8 +27,7 @@ ${note.extractedText.substring(0, 8000)}
 
 Summary:`;
 
-    const chatModel = await getChatModel();
-    const response = await chatModel.invoke(prompt);
+    const response = await invokeChatModel(prompt);
 
     const summary =
       typeof response.content === "string"
