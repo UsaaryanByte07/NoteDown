@@ -1,25 +1,14 @@
 const mongoose = require("mongoose");
-const {
-  getChatModel,
-  getEmbeddingModel,
-  getPromptTemplate,
-} = require("../config/gemini_config");
+const { invokeChatModel, getPromptTemplate } = require("../config/gemini_config");
 const {
   getEmbeddingsCollection,
   VECTOR_INDEX_NAME,
 } = require("./embedding-util");
 
-/**
- * Search for relevant text chunks from the given notes.
- *
- * @param {string} query - The user's question
- * @param {string[]} noteIds - Array of noteId strings to filter by
- * @param {number} topK - Number of chunks to retrieve (default: 5)
- * @returns {string} - Concatenated relevant text chunks
- */
 const retrieveContext = async (query, noteIds, topK = 5) => {
   const { MongoDBAtlasVectorSearch } = await import("@langchain/mongodb");
-  const embeddingModel = await getEmbeddingModel();
+  const { getEmbeddingModelInstance } = require("./embedding-util");
+  const embeddingModel = await getEmbeddingModelInstance();
   const collection = getEmbeddingsCollection();
 
   const vectorStore = new MongoDBAtlasVectorSearch(embeddingModel, {
@@ -86,9 +75,12 @@ RECENT CONVERSATION:
     ["human", "{question}"],
   ]);
 
-  // 4. Invoke the chain with the resolved values
-  const chatModel = await getChatModel();
-  const chain = prompt.pipe(chatModel);
+  const chain = {
+    invoke: async (vars) => {
+      const messages = await prompt.formatMessages(vars);
+      return invokeChatModel(messages);
+    },
+  };
 
   const response = await chain.invoke({
     context: context || "No relevant context found.",
@@ -96,7 +88,6 @@ RECENT CONVERSATION:
     question: userMessage,
   });
 
-  // 5. Extract text from the AIMessage
   return typeof response.content === "string"
     ? response.content.trim()
     : response.content.toString().trim();

@@ -3,7 +3,7 @@ const Note = require("../models/Note");
 const {
   getDocument,
   getTextSplitter,
-  getEmbeddingModel,
+  invokeEmbeddingModel,
 } = require("../config/gemini_config");
 
 // Name of the MongoDB collection where embeddings are stored
@@ -19,12 +19,6 @@ const getEmbeddingsCollection = () => {
   return mongoose.connection.db.collection(EMBEDDINGS_COLLECTION);
 };
 
-/**
- * Embed the extracted text of a note and store in Atlas Vector Search.
- * Called as fire-and-forget after admin approval.
- *
- * @param {string} noteId - The MongoDB ObjectId of the note
- */
 const embedNoteContent = async (noteId) => {
   try {
     // 1. Fetch the note
@@ -54,7 +48,9 @@ const embedNoteContent = async (noteId) => {
     const chunks = await splitter.splitDocuments([doc]);
 
     if (chunks.length === 0) {
-      console.warn(`No chunks produced for note ${noteId}. Skipping embedding.`);
+      console.warn(
+        `No chunks produced for note ${noteId}. Skipping embedding.`,
+      );
       return;
     }
 
@@ -64,7 +60,7 @@ const embedNoteContent = async (noteId) => {
 
     // 3. Initialize the vector store
     const { MongoDBAtlasVectorSearch } = await import("@langchain/mongodb");
-    const embeddingModel = await getEmbeddingModel();
+    const embeddingModel = await getEmbeddingModelInstance();
     const collection = getEmbeddingsCollection();
 
     const vectorSearch = new MongoDBAtlasVectorSearch(embeddingModel, {
@@ -86,6 +82,19 @@ const embedNoteContent = async (noteId) => {
     // Chat will gracefully handle missing embeddings by returning
     // "no relevant context found" responses.
   }
+};
+
+const getEmbeddingModelInstance = async () => {
+  return {
+    // Called by addDocuments() to embed an array of text chunks before storage
+    embedDocuments: async (texts) => invokeEmbeddingModel(texts),
+
+    // Called by similaritySearch() to embed the query string before searching
+    embedQuery: async (text) => {
+      const results = await invokeEmbeddingModel([text]);
+      return results[0];
+    },
+  };
 };
 
 /**
@@ -120,6 +129,7 @@ module.exports = {
   embedNoteContent,
   deleteNoteEmbeddings,
   getEmbeddingsCollection,
+  getEmbeddingModelInstance,
   EMBEDDINGS_COLLECTION,
   VECTOR_INDEX_NAME,
 };
