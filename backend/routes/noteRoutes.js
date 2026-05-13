@@ -13,10 +13,8 @@ const {
   getAllNotesForAdmin,
   patchRetrySummary,
 } = require("../controllers/notes/adminNoteController");
-const {getSystemStats} = require('../controllers/notes/superuserNoteController')
 const { postOcrCallback } = require("../controllers/notes/ocrCallbackController");
 
-const { requireSuperuser } = require("../middlewares/superuserMiddleware");
 const {
   requireUser,
   requireAdmin,
@@ -39,7 +37,6 @@ noteRoutes.get("/", requireLogin, getApprovedNotes);
 noteRoutes.get("/my-notes", requireUser, getMyNotes);
 
 noteRoutes.get('/admin/all', requireAdmin, getAllNotesForAdmin);
-noteRoutes.get("/system-stats", requireSuperuser, getSystemStats);
 noteRoutes.get("/pending", requireAdmin, getPendingNotes);
 noteRoutes.patch("/:id/approve", requireAdmin, patchApprovedNote);
 noteRoutes.patch("/:id/reject", requireAdmin, patchRejectedNote);

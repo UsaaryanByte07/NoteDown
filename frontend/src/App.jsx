@@ -4,9 +4,7 @@ import Spinner from "./components/Spinner";
 import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PublicRoute from "./components/PublicRoute";
-import SuperuserRoute from "./components/superuser/ProtectedSuperuserRoute";
-import PublicSuperuserRoute from "./components/superuser/PublicSuperuserRoute";
-import { SuperuserProvider } from "./context/superuser/superuserContext";
+
 
 import HomePage from "./pages/HomePage";
 import MaintenancePage from "./pages/MaintenancePage";
@@ -31,12 +29,7 @@ import MyNotesPage from "./pages/user/MyNotesPage";
 import NotesPage from "./pages/user/NotesPage";
 import ProfilePage from "./pages/user/ProfilePage";
 
-{
-  /* Superuser pages */
-}
-import SuperuserLoginPage from "./pages/superuser/SuperuserLoginPage";
-import SuperuserHomePage from "./pages/superuser/SuperuserHomePage";
-import SuperuserAddAdminPage from "./pages/superuser/SuperuserAddAdminPage";
+
 
 import "./App.css";
 
@@ -175,40 +168,7 @@ function App() {
           />
         </Route>
 
-        {/* ── Superuser Section (no Navbar, own auth) ──────────── */}
-        <Route
-          path="/superuser/*"
-          element={
-            <SuperuserProvider>
-              <Routes>
-                <Route
-                  path="login"
-                  element={
-                    <PublicSuperuserRoute>
-                      <SuperuserLoginPage />
-                    </PublicSuperuserRoute>
-                  }
-                />
-                <Route
-                  path=""
-                  element={
-                    <SuperuserRoute>
-                      <SuperuserHomePage />
-                    </SuperuserRoute>
-                  }
-                />
-                <Route
-                  path="add-admin"
-                  element={
-                    <SuperuserRoute>
-                      <SuperuserAddAdminPage />
-                    </SuperuserRoute>
-                  }
-                />
-              </Routes>
-            </SuperuserProvider>
-          }
-        />
+
 
         {/* ── Fallback ─────────────────────────────────────────── */}
         <Route path="*" element={<NotFoundPage />} />
