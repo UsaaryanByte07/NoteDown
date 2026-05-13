@@ -187,13 +187,12 @@ const NavLinks = ({ isLoggedIn, user, loading, handleLogout }) => {
   if (isLoggedIn) {
     return (
       <>
-        <span className="text-text-secondary">
-          Hello,{" "}
-          <span className="font-semibold text-text-primary">
-            {user?.firstName}
-          </span>
-          !
-        </span>
+        <Link
+          to="/"
+          className="px-4 py-2 text-text-secondary hover:text-text-primary transition-colors font-medium"
+        >
+          Home
+        </Link>
         {user?.userType === "admin" && (
           <Link
             to="/admin/notes"
@@ -222,7 +221,7 @@ const NavLinks = ({ isLoggedIn, user, loading, handleLogout }) => {
             >
               My Notes
             </Link>
-             <Link
+            <Link
               to="/chat"
               className="px-4 py-2 text-text-secondary hover:text-text-primary transition-colors font-medium"
             >
@@ -236,6 +235,13 @@ const NavLinks = ({ isLoggedIn, user, loading, handleLogout }) => {
         >
           Profile
         </Link>
+        <span className="text-text-secondary text-sm">
+          Hello,{" "}
+          <span className="font-semibold text-text-primary">
+            {user?.firstName}
+          </span>
+          !
+        </span>
         <ThemeToggle />
         <button
           onClick={handleLogout}
@@ -250,6 +256,12 @@ const NavLinks = ({ isLoggedIn, user, loading, handleLogout }) => {
 
   return (
     <div className="flex gap-3 items-center">
+      <Link
+        to="/"
+        className="px-4 py-2 text-text-secondary hover:text-text-primary transition-colors font-medium"
+      >
+        Home
+      </Link>
       <ThemeToggle />
       <Link
         to="/login"
@@ -279,6 +291,12 @@ const MobileNavLinks = ({ isLoggedIn, user, loading, handleLogout }) => {
             {user?.firstName} {user?.lastName}
           </p>
         </div>
+        <Link
+          to="/"
+          className="px-3 py-3 rounded-lg text-text-secondary hover:bg-bg-subtle hover:text-text-primary transition-colors"
+        >
+          🏠 Home
+        </Link>
 
         {user?.userType === "admin" && (
           <Link
@@ -346,6 +364,12 @@ const MobileNavLinks = ({ isLoggedIn, user, loading, handleLogout }) => {
 
   return (
     <>
+      <Link
+        to="/"
+        className="px-3 py-3 rounded-lg text-text-secondary hover:bg-bg-subtle hover:text-text-primary transition-colors"
+      >
+        🏠 Home
+      </Link>
       {/* Theme toggle for guests too */}
       <button
         onClick={toggleTheme}
