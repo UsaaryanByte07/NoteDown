@@ -2,7 +2,9 @@ const Note = require("../../models/Note");
 const User = require("../../models/User");
 const SystemStats = require("../../models/SystemStats");
 const { deleteNoteEmbeddings } = require("../../utils/embedding-util");
-const { terminateSessionsByNoteId } = require("../../utils/chat-termination-util");
+const {
+  terminateSessionsByNoteId,
+} = require("../../utils/chat-termination-util");
 const {
   extractTextFromDocx,
   analyzeDigitalPdf,
@@ -13,7 +15,10 @@ const {
   submitFileForVirusScan,
   getAnalysisResults,
 } = require("../../config/virustotal_config");
-const { uploadS3, deleteS3 } = require("../../utils/s3-util");
+const {
+  uploadToCloudinary,
+  deleteFromCloudinary,
+} = require("../../utils/cloudinary-util");
 const fs = require("fs");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
@@ -54,10 +59,10 @@ const getMyStorage = async (req, res) => {
 const getMyNotes = async (req, res, next) => {
   try {
     const notes = await Note.find({ uploader: req.user._id })
-      .select('-extractedText -extractedTextDraft -ocrToken')
+      .select("-extractedText -extractedTextDraft -ocrToken")
       .sort({
-      createdAt: -1,
-    });
+        createdAt: -1,
+      });
 
     return res.status(200).json({
       success: true,
@@ -209,11 +214,11 @@ const postUploadNote = async (req, res, next) => {
       extractedTextDraft = null;
     }
 
-    const s3Key = `notes/${req.user._id}/${Date.now()}-${req.file.originalname}`;
+    const cloudinaryPublicId = `notes/${req.user._id}/${Date.now()}-${req.file.originalname}`;
     const note = new Note({
       title: title.trim(),
       description: description ? description.trim() : "",
-      fileKey: s3Key,
+      fileKey: cloudinaryPublicId,
       scanAnalysisId: analysisId,
       uploader: req.user._id,
       fileSize: req.file.size,
@@ -262,7 +267,7 @@ const postUploadNote = async (req, res, next) => {
       note._id,
       analysisId,
       req.file.path,
-      s3Key,
+      cloudinaryPublicId,
       req.file.mimetype,
       req.file.size,
       req.user._id,
@@ -284,7 +289,7 @@ const postUploadNote = async (req, res, next) => {
 const getApprovedNotes = async (req, res, next) => {
   try {
     const notes = await Note.find({ status: "approved" })
-      .select('-extractedText -extractedTextDraft -ocrToken')
+      .select("-extractedText -extractedTextDraft -ocrToken")
       .populate("uploader", "firstName lastName")
       .sort({ createdAt: -1 });
 
@@ -305,7 +310,7 @@ const startScanPolling = (
   noteId,
   analysisId,
   quarantinePath,
-  s3Key,
+  cloudinaryPublicId,
   mimeType,
   fileSize,
   userId,
@@ -339,10 +344,9 @@ const startScanPolling = (
             );
           } else {
             try {
-              const uploadResult = await uploadS3(
+              const uploadResult = await uploadToCloudinary(
                 quarantinePath,
-                s3Key,
-                mimeType,
+                cloudinaryPublicId,
               );
 
               const currentNote = await Note.findById(noteId);
@@ -350,6 +354,7 @@ const startScanPolling = (
 
               const updateData = {
                 fileUrl: uploadResult.url,
+                fileKey: uploadResult.publicId,
                 scanResult: "Clean",
               };
 
@@ -381,13 +386,13 @@ const startScanPolling = (
               }
 
               console.log(
-                `Note ${noteId}: CLEAN — uploaded to S3${bothComplete ? " — status: pending" : " — awaiting OCR"}`,
+                `Note ${noteId}: CLEAN — uploaded to Cloudinary${bothComplete ? " — status: pending" : " — awaiting OCR"}`,
               );
             } catch (err) {
-              console.error(`Note ${noteId}: S3 upload failed:`, err);
+              console.error(`Note ${noteId}: Cloudinary upload failed:`, err);
               await Note.findByIdAndUpdate(noteId, {
                 status: "rejected",
-                scanResult: "S3 upload failed after clean scan",
+                scanResult: "Cloudinary upload failed after clean scan",
               });
             }
 
@@ -466,10 +471,10 @@ const deleteMyNote = async (req, res, next) => {
 
     if (note.fileUrl && note.fileKey) {
       try {
-        await deleteS3(note.fileKey);
+        await deleteFromCloudinary(note.fileKey);
       } catch (err) {
-        console.error("Error deleting S3 file:", err);
-        // Continue with deletion even if S3 delete fails
+        console.error("Error deleting Cloudinary file:", err);
+        // Continue with deletion even if Cloudinary delete fails
       }
 
       // Update storage counters

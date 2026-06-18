@@ -3,7 +3,7 @@ const User = require("../../models/User");
 const SystemStats = require("../../models/SystemStats");
 const { generateSummary } = require("../../utils/summary-util");
 const { embedNoteContent, deleteNoteEmbeddings } = require("../../utils/embedding-util");
-const { deleteS3 } = require("../../utils/s3-util");
+const { deleteFromCloudinary } = require("../../utils/cloudinary-util");
 const { terminateSessionsByNoteId } = require("../../utils/chat-termination-util");
 
 const MAX_GLOBAL_STORAGE = 4 * 1024 * 1024 * 1024; // 4 GB
@@ -97,11 +97,11 @@ const patchRejectedNote = async (req, res, next) => {
       await terminateSessionsByNoteId(req.params.id, note.title);
     }
 
-    // Adjust storage counters and delete the file from AWS S3
+    // Adjust storage counters and delete the file from Cloudinary
     if (note.fileUrl && note.fileSize) {
-      // Delete file from S3 so rejection is irreversible
+      // Delete file from Cloudinary so rejection is irreversible
       if (note.fileKey) {
-        await deleteS3(note.fileKey);
+        await deleteFromCloudinary(note.fileKey);
         note.fileUrl = "";
         note.fileKey = "";
       }
